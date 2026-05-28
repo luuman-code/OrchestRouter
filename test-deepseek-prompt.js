@@ -324,7 +324,7 @@ Use write_file tool for EACH file above. After all files, generate:
 
 function callDeepSeekAPI(messages, tools, maxTokens, thinking = null) {
   return new Promise((resolve, reject) => {
-    const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     // DeepSeek 使用 body.system 而不是 messages 中的 system role
     let systemPrompt = '';

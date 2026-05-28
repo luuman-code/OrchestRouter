@@ -29,7 +29,7 @@ const TOOLS = [
 
 function callDeepSeekAPI(messages, tools, maxTokens, thinking = null) {
   return new Promise((resolve, reject) => {
-    const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     let systemPrompt = '';
     const filteredMessages = messages.filter(msg => {

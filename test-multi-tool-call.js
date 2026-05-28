@@ -63,7 +63,7 @@ const USER_PROMPT = `请为以下项目结构生成代码：
 
 function callDeepSeekAPI(messages, tools, maxTokens, thinking = null) {
   return new Promise((resolve, reject) => {
-    const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     // DeepSeek 使用 body.system 而不是 messages 中的 system role
     let systemPrompt = '';

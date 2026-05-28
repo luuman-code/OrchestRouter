@@ -38,7 +38,7 @@
       "response_format": "openai",
       "api_base_url": "https://coding.dashscope.aliyuncs.com/v1",
       "api_key_env": "DASHSCOPE_API_KEY",
-      "api_key": "sk-sp-7e3437e797e44aa69caaabff71117608",
+      "api_key": "YOUR_DASHSCOPE_API_KEY_HERE",
       "models": [
         {
           "id": "qwen3-coder-plus",
@@ -205,7 +205,7 @@
       "response_format": "anthropic",
       "api_base_url": "https://api.deepseek.com/anthropic",
       "api_key_env": "DEEPSEEK_API_KEY",
-      "api_key": "sk-4ae354108bc04a97bc3dd197f0e6cc00",
+      "api_key": "YOUR_DEEPSEEK_API_KEY_HERE",
       "use_anthropic_format": true,
       "models": [
         {
@@ -274,7 +274,7 @@
       "response_format": "anthropic",
       "api_base_url": "https://api.minimaxi.com/anthropic",
       "api_key_env": "MINIMAX_API_KEY",
-      "api_key": "sk-cp-QI5hMZC8BwNBiY4TmAuKixuv8Qz_r2HIb9iDOPiHyi7FkWCn0WUtzQ363qOonMJWi3NrbHYx6EpAYWu-JcDOxu6JLjd-ZVF02ZaTBWDsVexFqCS5T_dB6zw",
+      "api_key": "YOUR_MINIMAX_API_KEY_HERE",
       "use_anthropic_format": true,
       "models": [
         {

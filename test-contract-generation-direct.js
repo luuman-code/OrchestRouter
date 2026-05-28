@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 
 // API 配置
-const API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 const BASE_URL = 'https://api.deepseek.com';
 
 // 测试请求

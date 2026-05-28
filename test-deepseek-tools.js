@@ -6,7 +6,7 @@
 const https = require('https');
 
 // DeepSeek API 配置
-const API_KEY = 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 const BASE_URL = 'api.deepseek.com';
 const MODEL = 'deepseek-chat';
 

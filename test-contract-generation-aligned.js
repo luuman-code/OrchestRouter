@@ -342,7 +342,7 @@ async function generateContractWithLLM(client, prompt, options = {}) {
 
 // 主测试函数
 async function runTests() {
-  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-4ae354108bc04a97bc3dd197f0e6cc00';
+  const apiKey = process.env.DEEPSEEK_API_KEY;
 
   const { task, implementation_plan } = testRequest;
   const { deliverables } = testRequest.task_details;
