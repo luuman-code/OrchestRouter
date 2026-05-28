@@ -1,0 +1,318 @@
+{
+  "session_id": null,
+  "implementation_plan": {
+    "tech_stack": ["React 18", "TypeScript", "Node.js", "Express", "PostgreSQL"],
+    "architecture_patterns": ["SPA", "MVC", "RESTful API"],
+    "code_standards": [
+      "no_empty_imports",
+      "use_relative_paths",
+      "consistent_naming"
+    ],
+    "path_conventions": {
+      "files": "kebab-case",
+      "components": "PascalCase",
+      "functions": "camelCase"
+    },
+    "shared_context": {
+      "description": "全局类型和配置约束 - 所有子任务必须遵循",
+      "types": {
+        "User": {
+          "description": "用户实体",
+          "properties": {
+            "id": "number",
+            "email": "string",
+            "name": "string",
+            "role": "\"customer\" | \"admin\"",
+            "createdAt": "string"
+          },
+          "required": ["id", "email", "name", "role"]
+        },
+        "Product": {
+          "description": "商品实体",
+          "properties": {
+            "id": "number",
+            "name": "string",
+            "description": "string",
+            "price": "number",
+            "stock": "number",
+            "image": "string",
+            "category": "string",
+            "createdAt": "string"
+          },
+          "required": ["id", "name", "price"]
+        },
+        "CartItem": {
+          "description": "购物车项",
+          "properties": {
+            "productId": "number",
+            "quantity": "number",
+            "product": "Product"
+          },
+          "required": ["productId", "quantity"]
+        },
+        "Order": {
+          "description": "订单实体",
+          "properties": {
+            "id": "number",
+            "userId": "number",
+            "items": "OrderItem[]",
+            "total": "number",
+            "status": "\"pending\" | \"processing\" | \"shipped\" | \"delivered\" | \"cancelled\"",
+            "createdAt": "string"
+          },
+          "required": ["id", "userId", "items", "total"]
+        }
+      },
+      "api_config": {
+        "baseURL": "http://localhost:3001/api",
+        "port": 3001
+      },
+      "file_naming": {
+        "services": "*.ts - 只允许 api.ts, auth.ts",
+        "forbidden_files": ["productService.ts", "cartService.ts", "userService.ts", "orderService.ts"]
+      },
+      "type_source": "src/types/index.ts",
+      "type_extension_rule": "如需扩展类型，应在 src/types/index.ts 中声明，由后续任务引用"
+    },
+    "dependencies": ["react", "react-dom", "react-router-dom", "express", "pg", "bcrypt", "jsonwebtoken"],
+    "best_practices": [
+      "只生成 deliverables 指定的文件，不要生成其他文件",
+      "不要生成测试文件",
+      "不要生成示例文件或文档文件",
+      "返回完整代码，不要返回占位符或 TODO",
+      "所有类型必须引用 shared_context.types 中定义的类型",
+      "不得在 deliverables 之外创建类型定义"
+    ],
+    "considerations": [
+      "确保代码完整可运行",
+      "避免占位符代码",
+      "使用相对路径导入模块",
+      "所有 import 必须有实际内容"
+    ]
+  },
+  "task": {
+    "title": "电商平台",
+    "description": "完整的电商平台系统，包含用户端和管理端",
+    "requirement": "实现一个完整的电商平台，包括：用户注册登录、商品展示、购物车、订单管理、支付集成（模拟）、管理员商品管理等功能",
+    "deliverables": [
+      {
+        "description": "项目入口文件",
+        "filePath": "src/index.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/index.tsx"
+        }
+      },
+      {
+        "description": "主应用组件",
+        "filePath": "src/App.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/App.tsx",
+          "dependsOn": ["src/index.tsx", "src/types/index.ts"]
+        }
+      },
+      {
+        "description": "类型定义",
+        "filePath": "src/types/index.ts",
+        "type": "model",
+        "integrationHints": {
+          "targetFile": "src/types/index.ts"
+        }
+      },
+      {
+        "description": "产品列表页面",
+        "filePath": "src/pages/ProductList.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/ProductList.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "产品详情页面",
+        "filePath": "src/pages/ProductDetail.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/ProductDetail.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "购物车页面",
+        "filePath": "src/pages/Cart.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Cart.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "用户登录页面",
+        "filePath": "src/pages/Login.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Login.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "用户注册页面",
+        "filePath": "src/pages/Register.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Register.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "订单确认页面",
+        "filePath": "src/pages/Checkout.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Checkout.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts", "src/pages/Cart.tsx"]
+        }
+      },
+      {
+        "description": "用户订单列表页面",
+        "filePath": "src/pages/Orders.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Orders.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/api.ts"]
+        }
+      },
+      {
+        "description": "API服务层",
+        "filePath": "src/services/api.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "src/services/api.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "description": "认证服务",
+        "filePath": "src/services/auth.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "src/services/auth.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "description": "购物车状态管理",
+        "filePath": "src/context/CartContext.tsx",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "src/context/CartContext.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "description": "认证状态管理",
+        "filePath": "src/context/AuthContext.tsx",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "src/context/AuthContext.tsx",
+          "dependsOn": ["src/types/index.ts", "src/services/auth.ts"]
+        }
+      },
+      {
+        "description": "导航栏组件",
+        "filePath": "src/components/Navbar.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/Navbar.tsx",
+          "dependsOn": ["src/types/index.ts", "src/context/CartContext.tsx"]
+        }
+      },
+      {
+        "description": "产品卡片组件",
+        "filePath": "src/components/ProductCard.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/ProductCard.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "description": "购物车项目组件",
+        "filePath": "src/components/CartItem.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/CartItem.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "description": "后端 Express 服务器",
+        "filePath": "server/index.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/index.ts"
+        }
+      },
+      {
+        "description": "数据库连接配置",
+        "filePath": "server/db.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "server/db.ts"
+        }
+      },
+      {
+        "description": "用户路由",
+        "filePath": "server/routes/users.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/users.ts",
+          "dependsOn": ["server/db.ts"]
+        }
+      },
+      {
+        "description": "产品路由",
+        "filePath": "server/routes/products.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/products.ts",
+          "dependsOn": ["server/db.ts"]
+        }
+      },
+      {
+        "description": "订单路由",
+        "filePath": "server/routes/orders.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/orders.ts",
+          "dependsOn": ["server/db.ts"]
+        }
+      },
+      {
+        "description": "全局样式",
+        "filePath": "src/styles/global.css",
+        "type": "style",
+        "integrationHints": {
+          "targetFile": "src/styles/global.css"
+        }
+      },
+      {
+        "description": "项目配置文件",
+        "filePath": "package.json",
+        "type": "config",
+        "integrationHints": {
+          "targetFile": "package.json"
+        }
+      },
+      {
+        "description": "TypeScript 配置",
+        "filePath": "tsconfig.json",
+        "type": "config",
+        "integrationHints": {
+          "targetFile": "tsconfig.json"
+        }
+      }
+    ]
+  }
+}

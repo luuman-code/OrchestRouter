@@ -1,0 +1,42 @@
+{
+  "$comment": "Anthropic 兼容格式适配器 - 用于 Anthropic、MiniMax(Anthropic格式) 等",
+  "name": "anthropic-compatible",
+  "request": {
+    "format": "anthropic",
+    "endpoint": "/v1/messages",
+    "contentField": "messages",
+    "modelField": "model",
+    "systemField": "system",
+    "authType": "api-key",
+    "authHeader": "x-api-key",
+    "requiredHeaders": {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01"
+    },
+    "optionalParams": ["temperature", "max_tokens", "top_p", "top_k", "stop_sequences", "tools", "tool_choice"],
+    "contentFormat": "array",
+    "contentItemType": "text"
+  },
+  "response": {
+    "format": "anthropic",
+    "statusField": "type",
+    "contentPath": "content",
+    "contentExtractor": {
+      "type": "filter",
+      "filterBy": "type",
+      "filterValue": "text",
+      "extractField": "text"
+    },
+    "thinkingExtractor": {
+      "type": "filter",
+      "filterBy": "type",
+      "filterValue": "thinking",
+      "extractField": "thinking"
+    },
+    "usageFields": {
+      "input": "usage.input_tokens",
+      "output": "usage.output_tokens",
+      "total": "usage.total_tokens"
+    }
+  }
+}

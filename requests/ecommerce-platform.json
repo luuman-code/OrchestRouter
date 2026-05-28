@@ -1,0 +1,27 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express", "SQLite"],
+    "contract_first": true
+  },
+  "task": {
+    "title": "电商平台",
+    "requirement": "开发一个包含用户认证、商品展示、购物车、订单管理的完整电商平台"
+  },
+  "task_details": {
+    "deliverables": [
+      { "filePath": "server/index.ts", "types": [{"dimension": "category", "value": "backend", "weight": 0.9}], "description": "后端服务入口，配置Express服务器和数据库连接" },
+      { "filePath": "server/routes/auth.ts", "types": [{"dimension": "category", "value": "backend", "weight": 0.9}], "description": "用户认证路由，包含注册、登录、JWT令牌生成" },
+      { "filePath": "server/routes/products.ts", "types": [{"dimension": "category", "value": "backend", "weight": 0.9}], "description": "商品管理路由，商品列表和详情接口" },
+      { "filePath": "server/routes/cart.ts", "types": [{"dimension": "category", "value": "backend", "weight": 0.9}], "description": "购物车路由，添加、删除、修改购物车商品" },
+      { "filePath": "server/routes/orders.ts", "types": [{"dimension": "category", "value": "backend", "weight": 0.9}], "description": "订单路由，创建订单和订单查询" },
+      { "filePath": "server/db/schema.sql", "types": [{"dimension": "category", "value": "backend", "weight": 0.8}], "description": "数据库表结构定义" },
+      { "filePath": "src/App.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "React根组件，路由配置" },
+      { "filePath": "src/pages/Home.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "首页，展示热门商品" },
+      { "filePath": "src/pages/Login.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "登录页面" },
+      { "filePath": "src/pages/Register.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "注册页面" },
+      { "filePath": "src/pages/ProductList.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "商品列表页" },
+      { "filePath": "src/pages/Cart.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "购物车页面" },
+      { "filePath": "src/pages/Orders.tsx", "types": [{"dimension": "category", "value": "frontend", "weight": 0.9}], "description": "订单页面" }
+    ]
+  }
+}

@@ -1,0 +1,1453 @@
+{
+  "$schema": "./schema.json",
+  "$comment": "======================================== OrchestRouter 统一配置文件 ========================================\n各配置项说明：\n- system: 系统基础配置\n- Providers: AI 模型提供商配置\n- selector: 模型选择规则\n- executor: 执行器配置\n- decomposer: 任务分解器配置\n- orchestrator: 编排器核心配置\n- circuit_breaker: 熔断器配置\n- session: 会话管理配置\n- retry_manager: 重试管理配置\n- rate_limiter: 限流器配置\n- learning_engine: 学习引擎配置\n- orchestrator_extensions: 编排器扩展模块配置",
+  "$version": "1.0.0",
+  "$comment_system": "---------------------------------------- 【系统配置】- 服务器基本设置 ----------------------------------------",
+  "system": {
+    "host": "127.0.0.1",
+    "port": 3458,
+    "debug": true,
+    "logLevel": "info",
+    "apiTimeoutMs": 600000,
+    "maxConcurrency": 10,
+    "tokenLimit": 50000,
+    "enableSessionSupport": true,
+    "sessionStoreType": "hybrid",
+    "sessionTtl": 3600000,
+    "sessionMaxSize": 52428800,
+    "detailedApiLogging": true
+  },
+  "$comment_Providers": "---------------------------------------- 【模型提供商】- AI 模型提供商及模型列表 ----------------------------------------",
+  "Providers": [
+    {
+      "name": "bailian",
+      "api_base_url": "https://coding.dashscope.aliyuncs.com/v1",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "api_key": "sk-sp-7e3437e797e44aa69caaabff71117608",
+      "models": [
+        {
+          "id": "qwen3-coder-plus",
+          "name": "Qwen3 Coder Plus",
+          "capabilities": [
+            "code",
+            "logic",
+            "api"
+          ],
+          "strengths": [
+            "代码生成",
+            "逻辑推理",
+            "API 开发"
+          ],
+          "pricing": {
+            "input": 0.0035,
+            "output": 0.015
+          },
+          "context_limit": 256000,
+          "quality_score": 8.5,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "qwen3-coder-plus"
+        },
+        {
+          "id": "qwen3-coder-next",
+          "name": "Qwen3 Coder Next",
+          "capabilities": [
+            "code",
+            "complex-tasks"
+          ],
+          "strengths": [
+            "复杂代码任务",
+            "高级推理"
+          ],
+          "pricing": {
+            "input": 0.0035,
+            "output": 0.015
+          },
+          "context_limit": 256000,
+          "quality_score": 9,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "qwen3-coder-next"
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen3.5 Plus",
+          "capabilities": [
+            "long-context",
+            "complex-tasks"
+          ],
+          "strengths": [
+            "长上下文处理",
+            "复杂任务"
+          ],
+          "pricing": {
+            "input": 0.0035,
+            "output": 0.015
+          },
+          "context_limit": 256000,
+          "quality_score": 9.2,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "qwen3.5-plus"
+        },
+        {
+          "id": "qwen3-max-2026-01-23",
+          "name": "Qwen3 Max 2026-01-23",
+          "capabilities": [
+            "max-context",
+            "reasoning"
+          ],
+          "strengths": [
+            "最大上下文",
+            "深度推理"
+          ],
+          "pricing": {
+            "input": 0.0035,
+            "output": 0.015
+          },
+          "context_limit": 256000,
+          "quality_score": 9.5,
+          "speed": "slow",
+          "max_concurrency": 10,
+          "response_time": 8000,
+          "api_model_id": "qwen3-max-2026-01-23"
+        },
+        {
+          "id": "kimi-k2.5",
+          "name": "Kimi K2.5",
+          "capabilities": [
+            "long-context",
+            "web-search"
+          ],
+          "strengths": [
+            "长文档处理",
+            "网页搜索"
+          ],
+          "pricing": {
+            "input": 0.002,
+            "output": 0.008
+          },
+          "context_limit": 128000,
+          "quality_score": 8.7,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000,
+          "api_model_id": "kimi-k2.5"
+        },
+        {
+          "id": "glm-5",
+          "name": "GLM-5",
+          "capabilities": [
+            "reasoning",
+            "coding"
+          ],
+          "strengths": [
+            "逻辑推理",
+            "代码生成"
+          ],
+          "pricing": {
+            "input": 0.002,
+            "output": 0.008
+          },
+          "context_limit": 128000,
+          "quality_score": 8.8,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000,
+          "api_model_id": "glm-5"
+        },
+        {
+          "id": "glm-4.7",
+          "name": "GLM-4.7",
+          "capabilities": [
+            "balanced",
+            "efficient"
+          ],
+          "strengths": [
+            "平衡性能",
+            "高效"
+          ],
+          "pricing": {
+            "input": 0.002,
+            "output": 0.008
+          },
+          "context_limit": 128000,
+          "quality_score": 8.2,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "glm-4.7"
+        },
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MiniMax M2.5",
+          "capabilities": [
+            "balanced",
+            "general"
+          ],
+          "strengths": [
+            "平衡性能",
+            "通用任务"
+          ],
+          "pricing": {
+            "input": 0.002,
+            "output": 0.008
+          },
+          "context_limit": 128000,
+          "quality_score": 8,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "MiniMax-M2.5"
+        }
+      ]
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/v1",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "api_key": "sk-4ae354108bc04a97bc3dd197f0e6cc00",
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "name": "DeepSeek Chat",
+          "capabilities": [
+            "chat",
+            "coding"
+          ],
+          "strengths": [
+            "对话",
+            "代码编写"
+          ],
+          "pricing": {
+            "input": 0.00027,
+            "output": 0.0011
+          },
+          "context_limit": 128000,
+          "quality_score": 7.5,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "deepseek-chat"
+        },
+        {
+          "id": "deepseek-reasoner",
+          "name": "DeepSeek Reasoner",
+          "capabilities": [
+            "reasoning",
+            "complex-tasks"
+          ],
+          "strengths": [
+            "复杂推理",
+            "问题解决"
+          ],
+          "pricing": {
+            "input": 0.00055,
+            "output": 0.0022
+          },
+          "context_limit": 128000,
+          "quality_score": 8.5,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 7000,
+          "api_model_id": "deepseek-reasoner"
+        }
+      ]
+    },
+    {
+      "name": "minimax",
+      "api_base_url": "https://api.minimaxi.com/v1",
+      "api_key_env": "MINIMAX_API_KEY",
+      "api_key": "sk-cp-QI5hMZC8BwNBiY4TmAuKixuv8Qz_r2HIb9iDOPiHyi7FkWCn0WUtzQ363qOonMJWi3NrbHYx6EpAYWu-JcDOxu6JLjd-ZVF02ZaTBWDsVexFqCS5T_dB6zw",
+      "models": [
+        {
+          "id": "MiniMax-M2.7",
+          "name": "MiniMax M2.7 (Agentic Model)",
+          "capabilities": [
+            "agent",
+            "tool-use",
+            "reasoning",
+            "complex-tasks"
+          ],
+          "strengths": [
+            "Agent智能体",
+            "工具使用Tool Use",
+            "模型自我迭代",
+            "复杂任务处理"
+          ],
+          "pricing": {
+            "input": 0.001,
+            "output": 0.005
+          },
+          "context_limit": 1000000,
+          "quality_score": 9.2,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000,
+          "api_model_id": "MiniMax-M2.7"
+        },
+        {
+          "id": "MiniMax-M2.7-highspeed",
+          "name": "MiniMax M2.7 HighSpeed",
+          "api_model_id": "MiniMax-M2.7-highspeed",
+          "capabilities": [
+            "agent",
+            "tool-use",
+            "highspeed",
+            "complex-tasks"
+          ],
+          "strengths": [
+            "Agent智能体",
+            "工具使用Tool Use",
+            "高速响应",
+            "复杂任务处理"
+          ],
+          "pricing": {
+            "input": 0.001,
+            "output": 0.005
+          },
+          "context_limit": 1000000,
+          "quality_score": 9,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 3000
+        },
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MiniMax M2.5",
+          "capabilities": [
+            "balanced",
+            "complex-tasks",
+            "coding",
+            "general"
+          ],
+          "strengths": [
+            "顶尖性能",
+            "极致性价比",
+            "复杂任务驾驭",
+            "代码能力"
+          ],
+          "pricing": {
+            "input": 0.0007,
+            "output": 0.0027
+          },
+          "context_limit": 1000000,
+          "quality_score": 8.5,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "MiniMax-M2.5"
+        },
+        {
+          "id": "MiniMax-M2.5-highspeed",
+          "name": "MiniMax M2.5 HighSpeed",
+          "capabilities": [
+            "highspeed",
+            "balanced",
+            "coding",
+            "general"
+          ],
+          "strengths": [
+            "高速响应",
+            "平衡性能",
+            "性价比极高",
+            "代码能力"
+          ],
+          "pricing": {
+            "input": 0.0007,
+            "output": 0.0027
+          },
+          "context_limit": 1000000,
+          "quality_score": 8.3,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 2500,
+          "api_model_id": "MiniMax-M2.5-highspeed"
+        },
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MinMax M2.5",
+          "capabilities": [
+            "balanced",
+            "general",
+            "coding"
+          ],
+          "strengths": [
+            "平衡性能",
+            "通用任务",
+            "代码能力"
+          ],
+          "pricing": {
+            "input": 0.0007,
+            "output": 0.0027
+          },
+          "context_limit": 1000000,
+          "quality_score": 8,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 4500,
+          "api_model_id": "MiniMax-M2.5"
+        },
+        {
+          "id": "MiniMax-M2.1-highspeed",
+          "name": "MiniMax M2.1 HighSpeed",
+          "capabilities": [
+            "highspeed",
+            "coding",
+            "agent",
+            "programming"
+          ],
+          "strengths": [
+            "高速响应",
+            "多语言编程能力",
+            "代码工程体验",
+            "Agent工作流"
+          ],
+          "pricing": {
+            "input": 0.0004,
+            "output": 0.0015
+          },
+          "context_limit": 1000000,
+          "quality_score": 7.8,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 2000,
+          "api_model_id": "MiniMax-M2.1-highspeed"
+        },
+        {
+          "id": "MiniMax-M2.1",
+          "name": "MiniMax M2.1",
+          "capabilities": [
+            "coding",
+            "programming",
+            "agent"
+          ],
+          "strengths": [
+            "多语言编程能力",
+            "代码工程体验升级",
+            "Agent工作流"
+          ],
+          "pricing": {
+            "input": 0.0004,
+            "output": 0.0015
+          },
+          "context_limit": 1000000,
+          "quality_score": 7.5,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 4000,
+          "api_model_id": "MiniMax-M2.1"
+        },
+        {
+          "id": "MiniMax-M2",
+          "name": "MiniMax M2",
+          "capabilities": [
+            "coding",
+            "agent",
+            "efficient"
+          ],
+          "strengths": [
+            "高效编码",
+            "Agent工作流",
+            "入门级成本"
+          ],
+          "pricing": {
+            "input": 0.0001,
+            "output": 0.0005
+          },
+          "context_limit": 1000000,
+          "quality_score": 7,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000,
+          "api_model_id": "MiniMax-M2"
+        },
+        {
+          "id": "MiniMax M2-her",
+          "name": "MiniMax M2-her (Roleplay)",
+          "capabilities": [
+            "conversation",
+            "roleplay"
+          ],
+          "strengths": [
+            "多角色沉浸扮演",
+            "长轮次复杂对话",
+            "角色一致性"
+          ],
+          "pricing": {
+            "input": 0.0007,
+            "output": 0.0027
+          },
+          "context_limit": 1000000,
+          "quality_score": 8.2,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 4000,
+          "api_model_id": "MiniMax M2-her",
+          "max_output_tokens": 2048,
+          "preferred_for": [],
+          "exclude_from_default": true
+        }
+      ]
+    }
+  ],
+  "$comment_selector": "---------------------------------------- 【模型选择】- 模型选择规则配置 ----------------------------------------",
+  "selector": {
+    "default": "deepseek,deepseek-chat",
+    "background": "minimax,MiniMax-M2.5",
+    "think": "deepseek,deepseek-reasoner",
+    "longContext": "minimax,MiniMax-M2.5",
+    "longContextThreshold": 100000,
+    "webSearch": "deepseek,deepseek-chat",
+    "image": "deepseek,deepseek-chat",
+    "code": "minimax,MiniMax-M2.5",
+    "reasoning": "deepseek,deepseek-reasoner",
+    "selectionRules": [],
+
+    "$comment_selector_constraints": "---------------------------------------- 选择器约束配置 ----------------------------------------",
+    "max_cost_per_task": 0.5,
+    "daily_budget": 10.00,
+    "preferred_providers": ["minimax", "deepseek", "bailian"],
+    "quality_first": false,
+
+    "$comment_selector_fallback": "---------------------------------------- 选择器降级策略 ----------------------------------------",
+    "fallback": {
+      "max_fallback_depth": 2,
+      "error_rate_threshold": 0.3,
+      "latency_threshold_ms": 5000,
+      "rate_limit_threshold": 10
+    },
+
+    "$comment_selector_monitoring": "---------------------------------------- 选择器监控配置 ----------------------------------------",
+    "monitoring": {
+      "enabled": true,
+      "status_check_interval": 60000,
+      "log_selection_reason": true,
+      "track_performance": true,
+      "max_history_size": 1000
+    },
+
+    "$comment_selector_strategy": "---------------------------------------- 选择器策略配置 ----------------------------------------",
+    "strategy": {
+      "enable_learning": true,
+      "learning_window": 100,
+      "quality_weight": 0.4,
+      "cost_weight": 0.4,
+      "speed_weight": 0.2,
+      "learning_integration": {
+        "strategy": "hybrid",
+        "rule_weight": 0.6,
+        "learning_weight": 0.4,
+        "min_learning_confidence": 0.7,
+        "contextual_switching": {
+          "enabled": true,
+          "conditions": {
+            "high_uncertainty_tasks": true,
+            "security_critical": true,
+            "repetitive_tasks": true,
+            "performance_sensitive": true
+          }
+        }
+      }
+    }
+  },
+  "$comment_costControl": "---------------------------------------- 【成本控制】- API 调用成本控制 ----------------------------------------",
+  "costControl": {
+    "dailyBudget": 1000,
+    "maxCostPerTask": 100,
+    "qualityFirst": false,
+    "safetyMargin": 0.2,
+    "conservativeEstimation": true,
+    "enabled": false,
+    "pendingConfirmTimeout": 30000,
+    "realTimeFeedbackEnabled": true,
+    "costThreshold": 0.8
+  },
+  "$comment_executor": "---------------------------------------- 【执行器】- 任务执行器配置 ----------------------------------------",
+  "executor": {
+    "general": {
+      "default_max_concurrency": 10,
+      "default_timeout": 60000,
+      "enable_tracing": true,
+      "enable_monitoring": true,
+      "log_level": "info"
+    },
+    "concurrency": {
+      "max_concurrent": 20,
+      "adaptive": true,
+      "timeout_ms": 30000,
+      "enable_priority_queue": false
+    },
+    "retry": {
+      "max_retries": 3,
+      "base_delay": 1000,
+      "max_delay": 60000,
+      "exponential_base": 2,
+      "jitter": true,
+      "retryable_errors": [
+        "TimeoutError",
+        "NetworkError",
+        "RateLimitError",
+        "ServerError",
+        "ConnectionError"
+      ]
+    },
+    "rate_limit": {
+      "default_rps": 10,
+      "burst_capacity": 30,
+      "enable_coordination": true,
+      "health_check_factor": 0.1,
+      "per_model": {}
+    },
+    "cost_control": {
+      "default_budget": 100,
+      "safety_margin": 0.2,
+      "conservative_estimation": true,
+      "enable_real_time_tracking": true
+    },
+    "tracing": {
+      "enabled": true,
+      "log_level": "info",
+      "include_sensitive_data": false,
+      "sampling_rate": 1,
+      "max_traces": 10000
+    },
+    "monitoring": {
+      "enabled": true,
+      "metrics_collection": true,
+      "performance_logging": true,
+      "alert_thresholds": {
+        "error_rate": 0.05,
+        "response_time": 5000,
+        "resource_usage": 0.8
+      }
+    },
+    "model_specific": {},
+    "fallback_strategy": {
+      "timeout": {
+        "enabled": true,
+        "max_attempts": 3,
+        "timeout_per_attempt": 30000,
+        "backoff_multiplier": 1.5
+      },
+      "budget": {
+        "enabled": true,
+        "max_cost_reduction": 0.5,
+        "alternative_search_depth": 5
+      },
+      "availability": {
+        "enabled": true,
+        "retry_on_unavailability": true,
+        "max_fallback_models": 3
+      },
+      "global": {
+        "max_total_fallbacks": 5,
+        "enable_chained_fallbacks": true,
+        "log_level": "info"
+      }
+    },
+    "health_check": {
+      "interval": 60000,
+      "timeout": 5000,
+      "enabled": true
+    },
+    "system_coordinator": {
+      "cpu_threshold_high": 0.7,
+      "cpu_threshold_critical": 0.9,
+      "memory_threshold_high": 0.7,
+      "memory_threshold_critical": 0.9,
+      "check_interval": 10000
+    },
+    "repair": {
+      "$comment": "修复机制配置 - 代码执行失败后的自动修复功能",
+      "enabled": true,
+      "max_local_repair_attempts": 3,
+      "max_cloud_repair_attempts": 2,
+      "repair_timeout": 30000,
+      "local_repair_delay": 1000,
+      "cloud_repair_delay": 3000,
+      "enable_auto_repair": true,
+      "default_repair_model": "MiniMax-M2.7",
+      "error_classification": {
+        "simple_error_patterns": [
+          "SyntaxError",
+          "ReferenceError",
+          "TypeError"
+        ],
+        "moderate_error_patterns": [
+          "Error:",
+          "Exception:",
+          "undefined is not"
+        ],
+        "complex_error_patterns": [
+          "Error:",
+          "ENOENT",
+          "EADDRINUSE"
+        ]
+      }
+    }
+  },
+  "$comment_defaultModels": "---------------------------------------- 【默认模型】- 默认模型列表 ----------------------------------------",
+  "defaultModels": [],
+  "$comment_decomposer": "---------------------------------------- 【任务分解】- 任务分解器配置 ----------------------------------------",
+  "decomposer": {
+    "llm": {
+      "enabled": true,
+      "base_url": "http://localhost:11434",
+      "model": "qwen2.5:3b",
+      "timeout": 60000,
+      "retry_attempts": 2,
+      "temperature": 0.1,
+      "max_concurrency": 3,
+      "max_batch_size": 10
+    },
+    "task_types": {
+      "built_in": {
+        "ui": {
+          "display_name": "用户界面",
+          "description": "UI 组件、页面、视图相关任务",
+          "category": "frontend",
+          "priority": 3,
+          "model_selection_hints": {
+            "preferred_models": [
+              "gemini",
+              "claude"
+            ],
+            "avoid_models": [
+              "deepseek"
+            ],
+            "context_sensitivity": "high"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".jsx",
+              ".tsx",
+              ".vue",
+              ".svelte"
+            ]
+          }
+        },
+        "style": {
+          "display_name": "样式设计",
+          "description": "CSS、SCSS 等样式相关任务",
+          "category": "frontend",
+          "priority": 2,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-haiku"
+            ],
+            "context_sensitivity": "medium"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".css",
+              ".scss",
+              ".sass",
+              ".less",
+              ".styl"
+            ]
+          }
+        },
+        "logic": {
+          "display_name": "业务逻辑",
+          "description": "业务逻辑、算法、工作流相关任务",
+          "category": "backend",
+          "priority": 5,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-sonnet",
+              "gpt-4"
+            ],
+            "context_sensitivity": "high"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".js",
+              ".ts",
+              ".py",
+              ".java",
+              ".go",
+              ".rs"
+            ]
+          }
+        },
+        "api": {
+          "display_name": "API 接口",
+          "description": "API 设计、实现、集成相关任务",
+          "category": "backend",
+          "priority": 4,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-sonnet",
+              "gpt-4"
+            ],
+            "context_sensitivity": "medium"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".js",
+              ".ts",
+              ".py",
+              ".java",
+              ".go"
+            ]
+          }
+        },
+        "test": {
+          "display_name": "测试",
+          "description": "单元测试、集成测试、E2E 测试",
+          "category": "quality",
+          "priority": 1,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-haiku",
+              "deepseek"
+            ],
+            "context_sensitivity": "low"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".test.js",
+              ".spec.js",
+              ".test.ts",
+              ".spec.ts",
+              ".py"
+            ]
+          }
+        },
+        "config": {
+          "display_name": "配置",
+          "description": "配置文件、环境变量等",
+          "category": "infrastructure",
+          "priority": 0,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-haiku"
+            ],
+            "context_sensitivity": "low"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".json",
+              ".yaml",
+              ".yml",
+              ".env",
+              ".toml"
+            ]
+          }
+        },
+        "model": {
+          "display_name": "数据模型",
+          "description": "数据模型、实体定义、ORM 相关任务",
+          "category": "backend",
+          "priority": 4,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-sonnet",
+              "gpt-4"
+            ],
+            "context_sensitivity": "medium"
+          },
+          "metadata": {
+            "typical_file_extensions": [
+              ".js",
+              ".ts",
+              ".py",
+              ".sql",
+              ".prisma"
+            ]
+          }
+        },
+        "general": {
+          "display_name": "通用任务",
+          "description": "无法明确分类的通用任务",
+          "category": "general",
+          "priority": 2,
+          "model_selection_hints": {
+            "preferred_models": [
+              "claude-sonnet"
+            ],
+            "context_sensitivity": "medium"
+          },
+          "metadata": {
+            "typical_file_extensions": []
+          }
+        }
+      },
+      "custom": {}
+    },
+    "matching_rules": {
+      "keyword_rules": [
+        {
+          "id": "kw-ui-001",
+          "type": "ui",
+          "keywords": [
+            "组件",
+            "component",
+            "ui",
+            "界面",
+            "页面",
+            "view",
+            "render"
+          ],
+          "weight": 0.8,
+          "match_mode": "any"
+        },
+        {
+          "id": "kw-style-001",
+          "type": "style",
+          "keywords": [
+            "样式",
+            "style",
+            "css",
+            "scss",
+            "美观",
+            "视觉"
+          ],
+          "weight": 0.75,
+          "match_mode": "any"
+        },
+        {
+          "id": "kw-api-001",
+          "type": "api",
+          "keywords": [
+            "api",
+            "接口",
+            "endpoint",
+            "route",
+            "请求",
+            "response"
+          ],
+          "weight": 0.8,
+          "match_mode": "any"
+        },
+        {
+          "id": "kw-model-001",
+          "type": "model",
+          "keywords": [
+            "模型",
+            "model",
+            "entity",
+            "schema",
+            "数据库",
+            "table"
+          ],
+          "weight": 0.85,
+          "match_mode": "any"
+        },
+        {
+          "id": "kw-test-001",
+          "type": "test",
+          "keywords": [
+            "测试",
+            "test",
+            "unit",
+            "spec",
+            "断言",
+            "assert"
+          ],
+          "weight": 0.9,
+          "match_mode": "any"
+        }
+      ],
+      "file_path_rules": [
+        {
+          "id": "fp-ui-001",
+          "type": "ui",
+          "patterns": [
+            "**/components/**/*",
+            "**/pages/**/*",
+            "**/views/**/*"
+          ],
+          "weight": 0.9
+        },
+        {
+          "id": "fp-style-001",
+          "type": "style",
+          "patterns": [
+            "**/*.css",
+            "**/*.scss",
+            "**/*.sass",
+            "**/*.module.css"
+          ],
+          "weight": 0.95
+        },
+        {
+          "id": "fp-api-001",
+          "type": "api",
+          "patterns": [
+            "**/api/**/*",
+            "**/routes/**/*",
+            "**/controllers/**/*"
+          ],
+          "weight": 0.9
+        },
+        {
+          "id": "fp-model-001",
+          "type": "model",
+          "patterns": [
+            "**/models/**/*",
+            "**/entities/**/*",
+            "**/schemas/**/*"
+          ],
+          "weight": 0.9
+        }
+      ],
+      "regex_rules": [
+        {
+          "id": "rx-test-001",
+          "type": "test",
+          "patterns": [
+            "\\.test\\.",
+            "\\.spec\\.",
+            "describe\\(|it\\(|test\\("
+          ],
+          "weight": 0.95,
+          "flags": "i"
+        }
+      ]
+    },
+    "plugins": {
+      "paths": [
+        "./plugins",
+        "./src/decomposer/plugins/built-in"
+      ],
+      "enabled": [],
+      "configs": {}
+    },
+    "semantic_analysis": {
+      "merge_threshold": 0.7,
+      "dependency_threshold": 0.3,
+      "weights": {
+        "content": 0.5,
+        "type": 0.3,
+        "context": 0.2
+      },
+      "algorithm": "tfidf_cosine",
+      "stop_words": [
+        "的",
+        "了",
+        "是",
+        "在",
+        "和",
+        "与",
+        "及",
+        "等",
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "to",
+        "for",
+        "with",
+        "on",
+        "at",
+        "from",
+        "by"
+      ]
+    },
+    "debug": {
+      "enabled": false,
+      "log_level": "info",
+      "max_history": 100,
+      "performance_tracking": true,
+      "memory_tracking": false
+    },
+    "conflict_resolution": {
+      "default_strategy": "rename",
+      "strategy_priority": [
+        "merge",
+        "partition",
+        "rename"
+      ],
+      "file_type_strategies": {
+        "*.jsx": "merge",
+        "*.tsx": "merge",
+        "*.vue": "merge",
+        "*.js": "partition",
+        "*.ts": "partition",
+        "*.py": "partition"
+      }
+    },
+    "hybrid_semantic": {
+      "$comment": "混合语义分析配置 - 使用 LLM 增强语义分析边界 case",
+      "enabled": false,
+      "llm_threshold": 0.3,
+      "max_llm_calls": 10,
+      "llm_timeout": 5000
+    },
+    "decomposer_enhancement": {
+      "$comment": "分解器增强配置 - 控制任务粒度和复杂度预估",
+      "complexityThresholds": {
+        "simple": 1000,
+        "medium": 3000,
+        "complex": 6000
+      },
+      "maxSubtaskSize": 2000
+    }
+  },
+  "$comment_orchestrator": "---------------------------------------- 【编排器核心】- 编排器核心配置 ----------------------------------------",
+  "orchestrator": {
+    "port": 3458,
+    "ccrRouterUrl": "http://127.0.0.1:3456",
+    "debug": false,
+    "autoOrchestrate": true,
+    "orchestrationThreshold": 0.7,
+    "maxConcurrency": 5,
+    "timeout": 300000,
+    "toolCallFormat": {
+      "enabled": true,
+      "defaultFormat": "json",
+      "supportedTools": [
+        "write_file",
+        "edit_file",
+        "bash"
+      ]
+    },
+    "session": {
+      "enableSession": true,
+      "storeType": "hybrid",
+      "sessionConfig": {
+        "ttl": 3600000,
+        "autoExtend": true
+      }
+    }
+  },
+  "$comment_circuit_breaker": "---------------------------------------- 【熔断器】- 熔断器配置 ----------------------------------------",
+  "circuit_breaker": {
+    "failureThreshold": 5,
+    "timeout": 60000,
+    "resetTimeout": 30000,
+    "successThreshold": 1,
+    "halfOpenInterval": 1000
+  },
+  "$comment_session": "---------------------------------------- 【会话管理】- 会话管理配置 ----------------------------------------",
+  "session": {
+    "idGeneration": {
+      "strategy": "uuid-v4",
+      "prefix": "sess",
+      "minLength": 32,
+      "entropySource": "crypto",
+      "validateOnCreate": true
+    },
+    "storage": {
+      "defaultStore": "memory",
+      "memory": {
+        "maxSessions": 1000,
+        "ttl": 3600000,
+        "maxSessionSize": 52428800,
+        "cleanupInterval": 300000
+      },
+      "file": {
+        "basePath": "./sessions",
+        "ttl": 3600000,
+        "maxSessionSize": 52428800,
+        "cleanupInterval": 300000,
+        "compression": {
+          "enabled": true,
+          "threshold": 10485760
+        }
+      },
+      "redis": {
+        "redisUrl": "redis://localhost:6379",
+        "ttl": 3600000,
+        "maxSessionSize": 52428800,
+        "namespace": "sessions",
+        "clusterSafe": false
+      },
+      "hybrid": {
+        "storageStrategy": "memory-first",
+        "syncMode": "async",
+        "failoverEnabled": true,
+        "memoryOptions": {
+          "maxSessions": 100,
+          "ttl": 300000
+        },
+        "fileOptions": {
+          "basePath": "./sessions",
+          "ttl": 3600000
+        },
+        "redisOptions": {
+          "redisUrl": "redis://localhost:6379",
+          "ttl": 3600000
+        },
+        "redisEnabled": true
+      }
+    },
+    "lifecycle": {
+      "maxDuration": 86400000,
+      "heartbeatInterval": 60000,
+      "idleTimeout": 1800000,
+      "autoSaveInterval": 30000
+    },
+    "security": {
+      "encryption": {
+        "enabled": false,
+        "algorithm": "aes-256-gcm",
+        "keyRotationInterval": 86400000
+      },
+      "rateLimiting": {
+        "enabled": true,
+        "maxRequests": 100,
+        "windowMs": 60000
+      }
+    },
+    "performance": {
+      "cache": {
+        "enabled": true,
+        "max": 100,
+        "ttl": 300000
+      },
+      "compression": {
+        "enabled": true,
+        "threshold": 1048576
+      },
+      "batchProcessing": {
+        "enabled": true,
+        "batchSize": 10,
+        "batchTimeout": 1000
+      }
+    },
+    "debug": {
+      "enabled": false,
+      "logLevel": "info",
+      "performanceLogging": false
+    }
+  },
+  "$comment_retry_manager": "---------------------------------------- 【重试管理】- 重试管理器配置 ----------------------------------------",
+  "retry_manager": {
+    "max_retries": 3,
+    "base_delay": 1000,
+    "exponential_base": 2,
+    "jitter": true,
+    "retryable_errors": [
+      "TimeoutError",
+      "NetworkError",
+      "RateLimitError",
+      "ServerError",
+      "ConnectionError"
+    ],
+    "error_based_delays": {
+      "TimeoutError": {
+        "base_delay": 2000,
+        "max_delay": 10000
+      },
+      "RateLimitError": {
+        "base_delay": 5000,
+        "max_delay": 30000
+      },
+      "ServerError": {
+        "base_delay": 1000,
+        "max_delay": 5000
+      }
+    },
+    "task_type_configs": {
+      "high_priority": {
+        "max_retries": 1,
+        "base_delay": 500
+      },
+      "low_priority": {
+        "max_retries": 5,
+        "base_delay": 2000
+      }
+    }
+  },
+  "$comment_rate_limiter": "---------------------------------------- 【限流器】- 限流器配置 ----------------------------------------",
+  "rate_limiter": {
+    "default_rps": 10,
+    "burst_capacity": 30,
+    "enable_coordination": true,
+    "health_check_factor": 0.1,
+    "per_model_limits": {},
+    "request_type_limits": {
+      "chat": {
+        "rps": 5,
+        "burst": 10
+      },
+      "embedding": {
+        "rps": 100,
+        "burst": 200
+      },
+      "completion": {
+        "rps": 10,
+        "burst": 30
+      }
+    }
+  },
+  "$comment_learning_engine": "---------------------------------------- 【学习引擎】- 学习引擎配置 ----------------------------------------",
+  "learning_engine": {
+    "enabled": true,
+    "persistence": {
+      "enabled": true,
+      "path": "./data/learning-data.json",
+      "auto_save_interval": 300000
+    },
+    "performance_window": 100,
+    "cleanup_interval": 3600000,
+    "feature_weights": {
+      "model_performance": 0.3,
+      "cost_efficiency": 0.2,
+      "response_time": 0.3,
+      "task_complexity": 0.2
+    },
+    "learning_rate": 0.15
+  },
+  "$comment_integrator": "---------------------------------------- 【整合器】- 代码整合器配置 ----------------------------------------",
+  "integrator": {
+    "$comment": "整合器配置 - 控制文件合并、依赖注入、冲突解决等功能",
+    "cache": {
+      "enabled": true,
+      "persistenceEnabled": true
+    },
+    "runtimeDependencies": {
+      "enabled": true,
+      "outputReport": true
+    },
+    "entryPoint": {
+      "enabled": true
+    },
+    "formatting": {},
+    "execution": {
+      "quality_threshold": 0.7,
+      "critical_quality_threshold": 0.5
+    },
+    "conflict": {},
+    "dependency": {}
+  },
+  "$comment_orchestrator_extensions": "---------------------------------------- 【编排器扩展】- 扩展模块配置 ----------------------------------------",
+  "orchestrator_extensions": {
+    "$comment": "======================================== 编排器扩展模块配置 ========================================",
+    "$comment_iteration": "---------------------------------------- 迭代控制 (IterationController) ----------------------------------------",
+    "iteration": {
+      "$comment": "控制迭代次数、质量分数阈值、时间限制等",
+      "maxIterations": 8,
+      "minQualityScore": 0.75,
+      "maxTimeMs": 1200000,
+      "enableHybridIteration": true,
+      "l1MaxRetries": 2,
+      "l2MaxIterations": 3,
+      "l3MaxIterations": 2,
+      "levelSwitchThreshold": 0.5,
+      "earlyTerminationEnabled": true
+    },
+    "$comment_levelSwitch": "---------------------------------------- 层级切换 (LevelSwitchManager) ----------------------------------------",
+    "levelSwitch": {
+      "$comment": "控制 L1/L2/L3 层级之间的切换阈值和条件",
+      "l1ToL2Threshold": 0.4,
+      "l2ToL3Threshold": 0.3,
+      "l3ToL2Threshold": 0.75,
+      "l2ToL1Threshold": 0.8,
+      "maxL1FailuresBeforeUpgrade": 3,
+      "maxL2IterationsBeforeUpgrade": 3,
+      "minL3QualityBeforeDowngrade": 0.7,
+      "l1TimeoutMs": 60000,
+      "l2TimeoutMs": 180000,
+      "l3TimeoutMs": 300000,
+      "stabilityWindow": 3
+    },
+    "$comment_classification": "---------------------------------------- 问题分类 (ProblemClassifier) ----------------------------------------",
+    "classification": {
+      "$comment": "根据问题复杂度决定使用 L1/L2/L3 处理",
+      "simpleErrorThreshold": 3,
+      "moduleIssueThreshold": 10,
+      "severityThreshold": 0.7
+    },
+    "$comment_replanning": "---------------------------------------- 重新规划 (Replanner) ----------------------------------------",
+    "replanning": {
+      "$comment": "控制任务重规划和优化的行为",
+      "enableSmartRefinement": true,
+      "maxRefinementRounds": 5,
+      "priorityAdjustmentFactor": 0.2
+    },
+    "$comment_quality": "---------------------------------------- 质量门控 (QualityGate) ----------------------------------------",
+    "quality": {
+      "$comment": "定义任务完成的质量标准权重",
+      "thresholds": {
+        "qualityScore": 0.7,
+        "testPassRate": 0.8,
+        "codeCoverage": 0.7,
+        "securityScore": 0.8,
+        "performanceScore": 0.7
+      },
+      "weights": {
+        "functionality": 0.3,
+        "reliability": 0.2,
+        "usability": 0.15,
+        "efficiency": 0.2,
+        "maintainability": 0.1,
+        "portability": 0.05
+      }
+    },
+    "$comment_feedback": "---------------------------------------- 反馈分析 (FeedbackAnalyzer) ----------------------------------------",
+    "feedback": {
+      "$comment": "控制反馈分析和根因分析的行为",
+      "minFeedbackQuality": 0.5,
+      "enableRootCauseAnalysis": true,
+      "enablePatternRecognition": true,
+      "feedbackWeight": {
+        "testFailure": 0.35,
+        "qualityIssue": 0.35,
+        "performanceIssue": 0.15,
+        "userFeedback": 0.15
+      }
+    },
+    "$comment_quickFix": "---------------------------------------- 快速修复 (QuickFixProcessor) ----------------------------------------",
+    "quickFix": {
+      "$comment": "L1 快速修复的配置参数",
+      "maxRetries": 2,
+      "timeout": 30000,
+      "claudeCodePath": "claude"
+    },
+    "$comment_flowEnhancement": "---------------------------------------- 流程增强 (OrchestrationFlowEnhancer) ----------------------------------------",
+    "flowEnhancement": {
+      "$comment": "控制是否启用各阶段的流程增强",
+      "enableExecutionEnhancement": true,
+      "enableIntegrationEnhancement": true,
+      "enableDecompositionEnhancement": true
+    },
+    "$comment_integratorEnhancement": "---------------------------------------- 整合增强 (IntegratorEnhancer) ----------------------------------------",
+    "integratorEnhancement": {
+      "$comment": "控制整合阶段的检查和增强功能",
+      "enableIntegrityCheck": true,
+      "enableDependencyCheck": true,
+      "enableAbsolutePathConversion": true,
+      "requiredFiles": [
+        "package.json",
+        "README.md"
+      ]
+    },
+    "$comment_executionEnhancement": "---------------------------------------- 执行增强 (ExecutorEnhancer) ----------------------------------------",
+    "executionEnhancement": {
+      "$comment": "控制执行阶段的超时、重试等参数",
+      "maxRetries": 2,
+      "defaultTimeout": 20000,
+      "maxTokensBase": 4096,
+      "retryDelay": 1000,
+      "validationTimeout": 60000,
+      "validationMaxMemory": 512
+    },
+    "$comment_cache": "---------------------------------------- 缓存管理 (OrchestratorCacheManager) ----------------------------------------",
+    "cache": {
+      "$comment": "编排器缓存配置，用于缓存任务结果",
+      "enabled": true,
+      "defaultTTL": 3600000,
+      "maxEntries": 1000,
+      "persistenceEnabled": true,
+      "llm": {
+        "enabled": true,
+        "baseUrl": "http://localhost:11434",
+        "model": "qwen2.5:3b",
+        "timeout": 30000,
+        "similarityThreshold": 0.8
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "task": {
+    "title": "Team Collaboration Todo Application",
+    "description": "Develop a comprehensive team collaboration todo application with user authentication, multi-user support, real-time collaboration features, and role-based access control.",
+    "deliverables": [
+      {
+        "id": "auth-system",
+        "description": "User authentication system with login, registration, and password recovery",
+        "type": "api",
+        "filePath": "src/auth/auth.controller.js"
+      },
+      {
+        "id": "user-model",
+        "description": "User data model with role-based permissions",
+        "type": "model",
+        "filePath": "src/models/User.js"
+      },
+      {
+        "id": "todo-model",
+        "description": "Todo item data model with assignment and status tracking",
+        "type": "model",
+        "filePath": "src/models/TodoItem.js"
+      },
+      {
+        "id": "database-schema",
+        "description": "Database schema with relationships for users, todos, and teams",
+        "type": "database",
+        "filePath": "src/database/schema.sql"
+      },
+      {
+        "id": "api-routes",
+        "description": "REST API routes for user management, todo operations, and team collaboration",
+        "type": "api",
+        "filePath": "src/routes/api.js"
+      },
+      {
+        "id": "security-middlewares",
+        "description": "Security middlewares for authentication, authorization, and rate limiting",
+        "type": "security",
+        "filePath": "src/middlewares/security.js"
+      },
+      {
+        "id": "realtime-features",
+        "description": "Real-time features using WebSockets for collaborative updates",
+        "type": "feature",
+        "filePath": "src/features/realtime.js"
+      },
+      {
+        "id": "ui-components",
+        "description": "Frontend UI components for todo management, user profiles, and team views",
+        "type": "ui",
+        "filePath": "src/ui/components/TodoApp.jsx"
+      },
+      {
+        "id": "testing-suite",
+        "description": "Comprehensive testing suite for backend APIs and frontend components",
+        "type": "test",
+        "filePath": "tests/unit/auth.test.js"
+      },
+      {
+        "id": "deployment-config",
+        "description": "Deployment configuration files for production environment",
+        "type": "config",
+        "filePath": "config/deployment.yaml"
+      }
+    ]
+  },
+  "options": {
+    "enableDecomposition": true,
+    "enableModelSelection": true,
+    "enableExecution": true
+  },
+  "outputFormat": "tool_call"
+}

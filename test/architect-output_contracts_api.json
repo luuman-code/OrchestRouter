@@ -1,0 +1,410 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "电商平台 API",
+    "version": "1.0.0",
+    "description": "功能完整的电商平台后端接口，涵盖用户认证、商品浏览、购物车和订单管理"
+  },
+  "servers": [
+    { "url": "http://localhost:3000/api", "description": "本地开发服务器" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "example": "UNAUTHORIZED" },
+          "message": { "type": "string", "example": "无效的登录凭证" }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "required": ["success"],
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "操作成功" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "name", "email", "role", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+          "name": { "type": "string", "example": "张三" },
+          "email": { "type": "string", "format": "email", "example": "zhangsan@example.com" },
+          "role": { "type": "string", "enum": ["customer", "admin"], "example": "customer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 50, "example": "张三" },
+          "email": { "type": "string", "format": "email", "example": "zhangsan@example.com" },
+          "password": { "type": "string", "minLength": 6, "maxLength": 100, "format": "password", "example": "MyP@ssw0rd!" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "zhangsan@example.com" },
+          "password": { "type": "string", "format": "password", "example": "MyP@ssw0rd!" }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": ["user", "accessToken"],
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" },
+          "accessToken": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIs..." }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "required": ["id", "name", "price", "stock", "categoryId", "imageUrl", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "prod-001" },
+          "name": { "type": "string", "example": "机械键盘 RGB" },
+          "description": { "type": "string", "example": "全键热插拔机械键盘，支持RGB背光" },
+          "price": { "type": "number", "format": "float", "minimum": 0, "example": 299.99 },
+          "stock": { "type": "integer", "minimum": 0, "example": 150 },
+          "categoryId": { "type": "string", "format": "uuid", "example": "cat-electronics" },
+          "imageUrl": { "type": "string", "format": "uri", "example": "/images/keyboard-rgb.jpg" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "required": ["id", "name", "slug"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "cat-electronics" },
+          "name": { "type": "string", "example": "电子产品" },
+          "slug": { "type": "string", "example": "electronics" },
+          "description": { "type": "string", "example": "手机、电脑、配件等" }
+        }
+      },
+      "ProductListResponse": {
+        "type": "object",
+        "required": ["products", "total", "page", "pageSize"],
+        "properties": {
+          "products": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
+          "total": { "type": "integer", "example": 120 },
+          "page": { "type": "integer", "example": 1 },
+          "pageSize": { "type": "integer", "example": 20 }
+        }
+      },
+      "CartItem": {
+        "type": "object",
+        "required": ["id", "productId", "product", "quantity", "unitPrice"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "cartitem-001" },
+          "productId": { "type": "string", "format": "uuid", "example": "prod-001" },
+          "product": { "$ref": "#/components/schemas/Product" },
+          "quantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "unitPrice": { "type": "number", "format": "float", "example": 299.99 }
+        }
+      },
+      "Cart": {
+        "type": "object",
+        "required": ["id", "userId", "items", "total"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "cart-001" },
+          "userId": { "type": "string", "format": "uuid" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/CartItem" } },
+          "total": { "type": "number", "format": "float", "example": 599.98 }
+        }
+      },
+      "AddCartItemRequest": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid", "example": "prod-001" },
+          "quantity": { "type": "integer", "minimum": 1, "default": 1, "example": 2 }
+        }
+      },
+      "UpdateCartItemRequest": {
+        "type": "object",
+        "required": ["quantity"],
+        "properties": {
+          "quantity": { "type": "integer", "minimum": 0, "example": 3 }
+        }
+      },
+      "OrderStatus": {
+        "type": "string",
+        "enum": ["pending_payment", "paid", "shipped", "delivered", "cancelled", "refunded"],
+        "example": "pending_payment"
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": ["id", "productId", "productName", "quantity", "unitPrice", "subtotal"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "productId": { "type": "string", "format": "uuid" },
+          "productName": { "type": "string", "example": "机械键盘 RGB" },
+          "quantity": { "type": "integer", "example": 2 },
+          "unitPrice": { "type": "number", "format": "float", "example": 299.99 },
+          "subtotal": { "type": "number", "format": "float", "example": 599.98 }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "userId", "items", "totalAmount", "status", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "order-001" },
+          "userId": { "type": "string", "format": "uuid" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/OrderItem" } },
+          "totalAmount": { "type": "number", "format": "float", "example": 599.98 },
+          "status": { "$ref": "#/components/schemas/OrderStatus" },
+          "shippingAddress": { "type": "string", "example": "北京市朝阳区某某路100号" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": ["shippingAddress"],
+        "properties": {
+          "shippingAddress": { "type": "string", "minLength": 5, "maxLength": 200, "example": "北京市朝阳区某某路100号" },
+          "remark": { "type": "string", "maxLength": 500, "example": "请发顺丰" }
+        }
+      },
+      "HomePageData": {
+        "type": "object",
+        "required": ["featuredProducts", "categories"],
+        "properties": {
+          "featuredProducts": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
+          "categories": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "用户注册",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "注册成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "409": { "description": "邮箱已存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "422": { "description": "参数校验失败", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "用户登录",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "登录成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "401": { "description": "邮箱或密码错误", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "用户登出",
+        "operationId": "logout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "登出成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["认证"],
+        "summary": "获取当前用户信息",
+        "operationId": "getCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "当前用户", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "未登录", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["商品"],
+        "summary": "获取商品列表",
+        "operationId": "listProducts",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 }, "description": "页码" },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 }, "description": "每页数量" },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string", "format": "uuid" }, "description": "按分类筛选" },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "商品名称模糊搜索" },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["price_asc", "price_desc", "newest", "name"] }, "description": "排序方式" }
+        ],
+        "responses": {
+          "200": { "description": "商品分页列表", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductListResponse" } } } }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["商品"],
+        "summary": "获取商品详情",
+        "operationId": "getProduct",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "商品ID" }
+        ],
+        "responses": {
+          "200": { "description": "商品详情", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "404": { "description": "商品不存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": ["商品"],
+        "summary": "获取所有分类",
+        "operationId": "listCategories",
+        "responses": {
+          "200": { "description": "分类列表", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } } }
+        }
+      }
+    },
+    "/cart": {
+      "get": {
+        "tags": ["购物车"],
+        "summary": "获取当前用户购物车",
+        "operationId": "getCart",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "购物车内容", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } },
+          "401": { "description": "未登录", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/cart/items": {
+      "post": {
+        "tags": ["购物车"],
+        "summary": "添加商品到购物车",
+        "operationId": "addCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddCartItemRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "添加成功，返回完整购物车", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } },
+          "400": { "description": "库存不足", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "商品不存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/cart/items/{itemId}": {
+      "put": {
+        "tags": ["购物车"],
+        "summary": "更新购物车商品数量",
+        "operationId": "updateCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "购物车项ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCartItemRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "更新成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } },
+          "404": { "description": "购物车项不存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["购物车"],
+        "summary": "从购物车移除商品",
+        "operationId": "removeCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "购物车项ID" }
+        ],
+        "responses": {
+          "200": { "description": "移除成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } },
+          "404": { "description": "购物车项不存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": ["订单"],
+        "summary": "获取当前用户订单列表",
+        "operationId": "listOrders",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/OrderStatus" }, "description": "按状态筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "订单分页列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["orders", "total", "page", "pageSize"],
+                  "properties": {
+                    "orders": { "type": "array", "items": { "$ref": "#/components/schemas/Order" } },
+                    "total": { "type": "integer" },
+                    "page": { "type": "integer" },
+                    "pageSize": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["订单"],
+        "summary": "从购物车创建订单",
+        "operationId": "createOrder",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "订单创建成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } } },
+          "400": { "description": "购物车为空或库存不足", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["订单"],
+        "summary": "获取订单详情",
+        "operationId": "getOrder",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "订单ID" }
+        ],
+        "responses": {
+          "200": { "description": "订单详情", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } } },
+          "404": { "description": "订单不存在", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    }
+  }
+}

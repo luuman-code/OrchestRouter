@@ -1,0 +1,180 @@
+﻿# 从CCRRouter同步的模型配置
+models:
+  # 阿里通义千问系列模型 (来自CCRRouter的bailian provider)
+  - id: "qwen3-coder-plus"
+    name: "Qwen3 Coder Plus"
+    provider: "aliyun"
+    type: "cloud"
+    capabilities: ["code", "logic", "api"]
+    strengths: ["代码生成", "逻辑推理", "API开发"]
+    pricing:
+      input: 0.00005
+      output: 0.0001
+    speed: "fast"
+    context_limit: 32768
+    quality_score: 8.5
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  - id: "qwen3-coder-next"
+    name: "Qwen3 Coder Next"
+    provider: "aliyun"
+    type: "cloud"
+    capabilities: ["code", "complex-tasks"]
+    strengths: ["复杂代码任务", "高级推理"]
+    pricing:
+      input: 0.00007
+      output: 0.00014
+    speed: "medium"
+    context_limit: 32768
+    quality_score: 9.0
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  - id: "qwen3.5-plus"
+    name: "Qwen3.5 Plus"
+    provider: "aliyun"
+    type: "cloud"
+    capabilities: ["long-context", "complex-tasks"]
+    strengths: ["长上下文处理", "复杂任务"]
+    pricing:
+      input: 0.0001
+      output: 0.0002
+    speed: "medium"
+    context_limit: 32768
+    quality_score: 9.2
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  - id: "qwen3-max-2026-01-23"
+    name: "Qwen3 Max 2026-01-23"
+    provider: "aliyun"
+    type: "cloud"
+    capabilities: ["max-context", "reasoning"]
+    strengths: ["最大上下文", "深度推理"]
+    pricing:
+      input: 0.0002
+      output: 0.0004
+    speed: "slow"
+    context_limit: 32768
+    quality_score: 9.5
+    available: true
+    max_concurrency: 10
+    response_time: 8000
+
+  - id: "MiniMax-M2.5"
+    name: "MiniMax M2.5"
+    provider: "minimax"
+    type: "cloud"
+    capabilities: ["balanced", "general"]
+    strengths: ["平衡性能", "通用任务"]
+    pricing:
+      input: 0.00008
+      output: 0.00016
+    speed: "fast"
+    context_limit: 32768
+    quality_score: 8.0
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  - id: "kimi-k2.5"
+    name: "Kimi K2.5"
+    provider: "moonshot"
+    type: "cloud"
+    capabilities: ["long-context", "web-search"]
+    strengths: ["长文档处理", "网页搜索"]
+    pricing:
+      input: 0.00012
+      output: 0.00024
+    speed: "medium"
+    context_limit: 32768
+    quality_score: 8.7
+    available: true
+    max_concurrency: 10
+    response_time: 6000
+
+  - id: "glm-5"
+    name: "GLM-5"
+    provider: "zhipu"
+    type: "cloud"
+    capabilities: ["reasoning", "coding"]
+    strengths: ["逻辑推理", "代码生成"]
+    pricing:
+      input: 0.0001
+      output: 0.0002
+    speed: "medium"
+    context_limit: 16384
+    quality_score: 8.8
+    available: true
+    max_concurrency: 10
+    response_time: 6000
+
+  - id: "glm-4.7"
+    name: "GLM-4.7"
+    provider: "zhipu"
+    type: "cloud"
+    capabilities: ["balanced", "efficient"]
+    strengths: ["平衡性能", "高效"]
+    pricing:
+      input: 0.00007
+      output: 0.00014
+    speed: "fast"
+    context_limit: 16384
+    quality_score: 8.2
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  # DeepSeek模型 (来自CCRRouter的deepseek provider)
+  - id: "deepseek-chat"
+    name: "DeepSeek Chat"
+    provider: "deepseek"
+    type: "cloud"
+    capabilities: ["chat", "coding"]
+    strengths: ["对话", "代码编写"]
+    pricing:
+      input: 0.000014
+      output: 0.000028
+    speed: "fast"
+    context_limit: 128000
+    quality_score: 7.5
+    available: true
+    max_concurrency: 10
+    response_time: 5000
+
+  - id: "deepseek-reasoner"
+    name: "DeepSeek Reasoner"
+    provider: "deepseek"
+    type: "cloud"
+    capabilities: ["reasoning", "complex-tasks"]
+    strengths: ["复杂推理", "问题解决"]
+    pricing:
+      input: 0.000028
+      output: 0.000056
+    speed: "medium"
+    context_limit: 128000
+    quality_score: 8.5
+    available: true
+    max_concurrency: 10
+    response_time: 7000
+
+  # Google Gemini模型 (来自CCRRouter的gemini provider)
+  - id: "gemini-3.1-pro-preview"
+    name: "Gemini 3.1 Pro Preview"
+    provider: "google"
+    type: "cloud"
+    capabilities: ["multi-modal", "reasoning"]
+    strengths: ["多模态", "复杂推理"]
+    pricing:
+      input: 0.000075
+      output: 0.0003
+    speed: "fast"
+    context_limit: 1048576
+    quality_score: 9.0
+    available: true
+    max_concurrency: 10
+    response_time: 5000

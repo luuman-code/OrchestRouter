@@ -1,0 +1,48 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express"],
+    "contract_first": false,
+    "shared_context": {
+      "project_name": "E-commerce Platform",
+      "description": "电商平台配置文件"
+    },
+    "conflict_sensitive_groups": [
+      {
+        "priority": 100,
+        "name": "配置文件组",
+        "files": ["package.json", "tsconfig.json", "vite.config.ts", "index.html"],
+        "mergeMode": "selected_only"
+      }
+    ]
+  },
+  "task": {
+    "title": "E-commerce Platform Config Files",
+    "requirement": "为电商平台生成 package.json、tsconfig.json、vite.config.ts 和 index.html 配置文件",
+    "deliverables": [
+      {
+        "description": "npm 配置文件，包含所有依赖",
+        "filePath": "package.json",
+        "type": "logic",
+        "integrationHints": {}
+      },
+      {
+        "description": "TypeScript 编译配置",
+        "filePath": "tsconfig.json",
+        "type": "logic",
+        "integrationHints": {}
+      },
+      {
+        "description": "Vite 构建工具配置",
+        "filePath": "vite.config.ts",
+        "type": "logic",
+        "integrationHints": {}
+      },
+      {
+        "description": "HTML 入口文件",
+        "filePath": "index.html",
+        "type": "ui",
+        "integrationHints": {}
+      }
+    ]
+  }
+}

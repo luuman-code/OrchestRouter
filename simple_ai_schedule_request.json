@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请创建一个简单的AI智能日程表应用。只需要创建一个基本的index.html文件，包含一个标题'AI智能日程表'和一个简单的待办事项列表功能。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "project": "simple_ai_scheduler",
+  "outputDir": "C:\\\\Users\\\\LWB\\\\Desktop\\\\AI intelligent schedule planner",
+  "maxTokens": 2000
+}

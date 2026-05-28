@@ -1,0 +1,11 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请创建一个完整的待办事项应用，包含一个HTML文件(index.html)，一个CSS文件(style.css)，和一个JavaScript文件(script.js)。HTML文件应包含基本的页面结构，CSS文件应包含样式定义，JavaScript文件应包含待办事项的添加、删除和标记完成的功能。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "max_tokens": 4096,
+  "temperature": 0.7
+}

@@ -1,0 +1,357 @@
+# 多标签任务类型与模型能力匹配配置
+# Multi-label Task Type and Model Capability Matching Configuration
+
+# 任务类型定义 (Task Type Definitions)
+taskTypes:
+  ui:
+    label: "用户界面"
+    description: "用户界面开发，包括组件、页面、样式等"
+    keywords: ["ui", "component", "button", "input", "form", "modal", "page", "view", "界面", "组件", "按钮", "表单"]
+    regexPatterns:
+      - "\\.(tsx|jsx|vue|svelte)$"
+      - "component|Component"
+      - "styled?\\.|css\\.|scss\\.|less"
+    weight: 0.9
+
+  api:
+    label: "API接口"
+    description: "API接口开发，包括REST、GraphQL等"
+    keywords: ["api", "endpoint", "route", "request", "response", "rest", "graphql", "http", "接口", "路由"]
+    regexPatterns:
+      - "router\\.|Route\\.|@router"
+      - "GET|POST|PUT|DELETE|PATCH"
+      - "/api/.*"
+    weight: 0.9
+
+  logic:
+    label: "业务逻辑"
+    description: "业务逻辑处理，算法实现等"
+    keywords: ["logic", "business", "algorithm", "process", "service", "manager", "业务", "逻辑", "算法", "处理"]
+    regexPatterns:
+      - "service|Service|manager|Manager"
+      - "process|Process"
+    weight: 0.85
+
+  model:
+    label: "数据模型"
+    description: "数据模型定义，ORM映射等"
+    keywords: ["model", "entity", "schema", "type", "interface", "class", "数据模型", "实体", "类型"]
+    regexPatterns:
+      - "model|Entity|Schema"
+      - "interface\\s+\\w+"
+      - "type\\s+\\w+"
+    weight: 0.85
+
+  test:
+    label: "测试"
+    description: "测试代码编写"
+    keywords: ["test", "spec", "mock", "suite", "expect", "assert", "测试", "单元测试", "集成测试"]
+    regexPatterns:
+      - "\\.(test|spec)\\.(js|ts|tsx)$"
+      - "describe|it\\(|test\\("
+    weight: 0.8
+
+  style:
+    label: "样式"
+    description: "样式编写，包括CSS、SCSS等"
+    keywords: ["style", "css", "scss", "less", "theme", "responsive", "样式", "主题"]
+    regexPatterns:
+      - "\\.(css|scss|less|sass)$"
+      - "style|styleName|className"
+    weight: 0.8
+
+  config:
+    label: "配置"
+    description: "配置文件"
+    keywords: ["config", "setting", "options", "environment", "配置", "设置", "环境变量"]
+    regexPatterns:
+      - "(config|\\.env|settings|options)\\.(js|ts|json|yaml|yml)$"
+    weight: 0.7
+
+  form:
+    label: "表单处理"
+    description: "表单处理，包括表单验证、提交等"
+    keywords: ["form", "input", "validation", "submit", "field", "表单", "验证", "输入"]
+    regexPatterns:
+      - "Form|form|Input|input"
+      - "validation|validate"
+    weight: 0.75
+
+  auth:
+    label: "认证授权"
+    description: "认证和授权相关功能"
+    keywords: ["auth", "login", "logout", "session", "token", "jwt", "permission", "认证", "登录", "权限"]
+    regexPatterns:
+      - "auth|Auth|login|Login"
+      - "jwt|token|Token"
+      - "permission|Permission"
+    weight: 0.8
+
+  database:
+    label: "数据库"
+    description: "数据库操作相关"
+    keywords: ["database", "db", "query", "sql", "mongodb", "mysql", "postgres", "数据库", "查询"]
+    regexPatterns:
+      - "database|db|Database"
+      - "SELECT|INSERT|UPDATE|DELETE"
+    weight: 0.85
+
+  state:
+    label: "状态管理"
+    description: "状态管理相关功能"
+    keywords: ["state", "store", "redux", "context", "reactive", "状态", "存储", "Redux"]
+    regexPatterns:
+      - "store|Store|state|State"
+      - "redux|Redux|context|Context"
+    weight: 0.8
+
+  i18n:
+    label: "国际化"
+    description: "国际化相关功能"
+    keywords: ["i18n", "locale", "translation", "language", "international", "国际化", "翻译", "语言"]
+    regexPatterns:
+      - "i18n|locale|Locale"
+      - "translation|translate"
+    weight: 0.7
+
+  security:
+    label: "安全相关"
+    description: "安全相关功能"
+    keywords: ["security", "secure", "encrypt", "decrypt", "hash", "crypto", "安全", "加密", "解密"]
+    regexPatterns:
+      - "security|Security|encrypt|Encrypt"
+      - "crypto|Crypto|hash|Hash"
+    weight: 0.85
+
+  performance:
+    label: "性能优化"
+    description: "性能优化相关"
+    keywords: ["performance", "optimize", "cache", "lazy", "memo", "性能", "优化", "缓存"]
+    regexPatterns:
+      - "performance|Performance|optimize|Optimize"
+      - "cache|Cache|memo|Memo"
+    weight: 0.75
+
+  devops:
+    label: "部署运维"
+    description: "部署和运维相关"
+    keywords: ["devops", "deploy", "docker", "k8s", "kubernetes", "ci", "cd", "部署", "Docker", "K8s"]
+    regexPatterns:
+      - "Dockerfile|docker-compose"
+      - "\\.yml$|\\.yaml$"
+    weight: 0.7
+
+  docs:
+    label: "文档"
+    description: "文档编写"
+    keywords: ["docs", "documentation", "readme", "comment", "文档", "说明"]
+    regexPatterns:
+      - "README|readme"
+      - "docs/|documentation/"
+    weight: 0.6
+
+# 任务类型到所需能力的映射 (Task Type to Required Capabilities Mapping)
+typeToCapabilities:
+  ui:
+    ui: 0.9
+    code: 0.7
+    style: 0.8
+  api:
+    api: 0.9
+    logic: 0.8
+    code: 0.7
+  logic:
+    logic: 0.9
+    reasoning: 0.8
+    code: 0.7
+  model:
+    code: 0.9
+    logic: 0.7
+  test:
+    test: 0.9
+    code: 0.6
+  style:
+    style: 0.9
+    ui: 0.7
+  config:
+    code: 0.8
+    logic: 0.5
+  form:
+    ui: 0.7
+    logic: 0.8
+    code: 0.7
+  auth:
+    security: 0.9
+    logic: 0.8
+    code: 0.7
+  database:
+    database: 0.9
+    logic: 0.7
+    code: 0.7
+  state:
+    logic: 0.8
+    code: 0.8
+  i18n:
+    logic: 0.7
+    code: 0.6
+  security:
+    security: 0.9
+    code: 0.8
+  performance:
+    reasoning: 0.8
+    code: 0.8
+  devops:
+    devops: 0.9
+    code: 0.6
+  docs:
+    reasoning: 0.6
+    code: 0.4
+
+# 模型能力定义 (Model Capability Definitions)
+modelCapabilities:
+  # Claude 系列
+  claude-3-opus:
+    code: 0.95
+    reasoning: 0.95
+    logic: 0.9
+    api: 0.9
+    ui: 0.85
+    test: 0.9
+    style: 0.8
+    security: 0.9
+    database: 0.85
+    long_context: 0.95
+
+  claude-3-sonnet:
+    code: 0.9
+    reasoning: 0.9
+    logic: 0.85
+    api: 0.85
+    ui: 0.8
+    test: 0.85
+    style: 0.75
+    security: 0.85
+    database: 0.8
+
+  claude-3-haiku:
+    code: 0.8
+    reasoning: 0.75
+    logic: 0.7
+    api: 0.75
+    ui: 0.7
+    test: 0.75
+    style: 0.65
+    security: 0.7
+    database: 0.7
+
+  # GPT 系列
+  gpt-4-turbo:
+    code: 0.9
+    reasoning: 0.9
+    logic: 0.85
+    api: 0.9
+    ui: 0.85
+    test: 0.85
+    style: 0.8
+    security: 0.85
+    database: 0.85
+    multi_modal: 0.9
+
+  gpt-4:
+    code: 0.9
+    reasoning: 0.9
+    logic: 0.85
+    api: 0.85
+    ui: 0.8
+    test: 0.85
+    style: 0.75
+    security: 0.85
+    database: 0.8
+
+  gpt-3.5-turbo:
+    code: 0.75
+    reasoning: 0.7
+    logic: 0.7
+    api: 0.75
+    ui: 0.7
+    test: 0.7
+    style: 0.65
+    security: 0.65
+    database: 0.65
+
+  # Qwen 系列
+  qwen2.5-coder:
+    code: 0.9
+    reasoning: 0.75
+    logic: 0.8
+    api: 0.85
+    ui: 0.75
+    test: 0.8
+    style: 0.7
+
+  qwen2.5:
+    code: 0.8
+    reasoning: 0.75
+    logic: 0.75
+    api: 0.75
+    ui: 0.7
+    test: 0.7
+    style: 0.65
+    security: 0.7
+
+  qwen:
+    code: 0.75
+    reasoning: 0.7
+    logic: 0.7
+    api: 0.7
+    ui: 0.65
+    test: 0.65
+    style: 0.6
+
+# 匹配配置 (Matching Configuration)
+matching:
+  # 最小置信度阈值
+  minConfidence: 0.3
+
+  # 多类型组合策略: "weighted" | "max" | "average"
+  combinationStrategy: "weighted"
+
+  # 能力权重调整
+  capabilityWeights:
+    reasoning: 1.2
+    security: 1.1
+    code: 1.0
+    logic: 1.0
+    api: 0.9
+    ui: 0.9
+    test: 0.9
+    style: 0.8
+    database: 0.9
+    long_context: 1.0
+    multi_modal: 1.0
+
+  # 相似度计算方法: "cosine" | "dot" | "euclidean"
+  similarityMethod: "weighted"
+
+  # 回退模型选择策略
+  fallbackStrategy: "capability"
+
+# ==================== LLM 配置 ====================
+llm:
+  enabled: true
+  base_url: "http://localhost:11434"
+  model: "qwen2.5:3b"
+  timeout: 60000
+
+# ==================== 混合语义分析配置 ====================
+# 启用混合模式（结合算法和LLM）
+hybrid_semantic:
+  enabled: true
+  # 是否启用LLM增强（设为true才会调用LLM）
+  llm_enabled: true
+  # 触发LLM的相似度阈值（低于此值才触发LLM增强）
+  llm_threshold: 0.3
+  # 最多LLM调用次数（防止无限调用）
+  max_llm_calls: 10
+  # 启用缓存避免重复调用
+  cache_enabled: true

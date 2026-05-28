@@ -1,0 +1,85 @@
+你是架构师，负责为以下需求生成 OpenAPI 3.0 规范和 TypeScript 类型定义。
+
+## 技术栈
+React 18, TypeScript, Vite, Tailwind CSS, Node.js, Express, SQLite
+
+## 需求描述
+开发一个功能完整的电商平台代码，包含用户认证、商品浏览、购物车、订单管理
+
+## 待生成文件列表
+- [types] types/index.ts: 类型定义文件
+- [api] contracts/api.json: API契约文件
+- [logic] server/database/db.ts: 数据库初始化
+- [api] server/routes/auth.ts: 认证路由
+- [ui] src/pages/Home.tsx: 首页
+- [ui] src/pages/Login.tsx: 登录页
+- [ui] src/pages/Cart.tsx: 购物车页
+
+## 输出要求
+
+【关键】你必须一次性调用 write_file 工具两次，同时生成以下两个文件：
+
+1. write_file 工具调用 #1 - 契约文件:
+   - file_path: "contracts/api.json"
+   - content: 完整的 OpenAPI 3.0 JSON 规范，包含所有 API 端点和 schema 定义
+
+2. write_file 工具调用 #2 - 类型定义文件:
+   - file_path: "types/index.ts"
+   - content: TypeScript 类型定义，使用 // [COMMON] 和 // [FILE: <path>] 分组格式
+
+## 类型定义格式示例
+
+```typescript
+// ============================================================
+// 电商平台 - TypeScript 类型定义
+// ============================================================
+
+// [COMMON]
+export interface ApiError {
+  code: string;
+  message: string;
+}
+export interface SuccessResponse {
+  success: true;
+  message: string;
+}
+
+// [FILE: src/stores/userStore.ts]
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// [FILE: src/pages/Home.tsx]
+export interface HomePageData {
+  featuredProducts: Product[];
+  categories: Category[];
+}
+
+// [FILE: src/pages/Cart.tsx]
+export interface Cart {
+  items: CartItem[];
+  total: number;
+}
+```
+
+【重要】// [FILE: <path>] 中的 <path> 必须与待生成文件列表中的路径完全一致。
+
+## 示例响应格式
+
+你的响应中应包含两个 tool_call，例如：
+
+tool_calls: [
+  {
+    "name": "write_file",
+    "arguments": {"file_path": "contracts/api.json", "content": "{"openapi": "3.0.0", ...}"}
+  },
+  {
+    "name": "write_file",
+    "arguments": {"file_path": "types/index.ts", "content": "// [COMMON]
+export interface ApiError {...}"}
+  }
+]
+
+请立即生成这两个文件，不要先做其他事情。

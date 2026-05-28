@@ -1,0 +1,157 @@
+你是架构师，负责为以下需求生成 OpenAPI 3.0 规范和 TypeScript 类型定义。
+
+## 技术栈
+React, TypeScript, Node.js, Express, Vite
+
+## 需求描述
+开发一个完整的电商平台，包含用户认证、商品浏览、购物车、订单管理等功能，使用 React + TypeScript + Node.js + Express 技术栈
+
+## 待生成文件列表
+- [logic] package.json: 项目配置文件，包含依赖和脚本
+- [logic] vite.config.js: Vite 配置文件
+- [logic] tailwind.config.js: Tailwind CSS 配置
+- [logic] postcss.config.js: PostCSS 配置
+- [logic] src/index.css: 全局样式文件
+- [logic] server/database/db.ts: 数据库初始化和连接
+- [logic] server/index.ts: 后端服务器入口
+- [logic] server/routes/auth.ts: 认证路由
+- [logic] server/routes/products.ts: 商品路由
+- [logic] server/routes/cart.ts: 购物车路由
+- [logic] server/routes/orders.ts: 订单路由
+- [ui] src/App.tsx: React 应用主入口和路由
+- [ui] src/main.tsx: React 应用启动入口
+- [logic] src/services/api.ts: API 服务层
+- [ui] src/pages/Home.tsx: 首页
+- [ui] src/pages/Login.tsx: 登录页面
+- [ui] src/pages/Register.tsx: 注册页面
+- [ui] src/pages/ProductList.tsx: 商品列表页面
+- [ui] src/pages/ProductDetail.tsx: 商品详情页面
+- [ui] src/pages/Cart.tsx: 购物车页面
+- [ui] src/pages/OrderList.tsx: 订单列表页面
+- [ui] src/pages/OrderDetail.tsx: 订单详情页面
+- [ui] src/components/Header.tsx: 页头组件
+- [ui] src/components/ProductCard.tsx: 商品卡片组件
+- [ui] src/components/CartItem.tsx: 购物车项组件
+- [ui] src/components/Button.tsx: 按钮组件
+- [ui] src/components/Input.tsx: 输入框组件
+- [ui] src/components/Loading.tsx: 加载状态组件
+
+## 【重要】必须为以下所有文件生成类型定义分组
+
+你必须为以下每一个 TypeScript 文件生成对应的类型定义分组，**一个都不能遗漏**：
+
+server/database/db.ts
+server/index.ts
+server/routes/auth.ts
+server/routes/products.ts
+server/routes/cart.ts
+server/routes/orders.ts
+src/App.tsx
+src/main.tsx
+src/services/api.ts
+src/pages/Home.tsx
+src/pages/Login.tsx
+src/pages/Register.tsx
+src/pages/ProductList.tsx
+src/pages/ProductDetail.tsx
+src/pages/Cart.tsx
+src/pages/OrderList.tsx
+src/pages/OrderDetail.tsx
+src/components/Header.tsx
+src/components/ProductCard.tsx
+src/components/CartItem.tsx
+src/components/Button.tsx
+src/components/Input.tsx
+src/components/Loading.tsx
+
+## 输出要求
+
+【关键】你必须一次性调用 write_file 工具两次，同时生成以下两个文件：
+
+1. write_file 工具调用 #1 - 契约文件:
+   - file_path: "contracts/api.json"
+   - content: 完整的 OpenAPI 3.0 JSON 规范，包含所有 API 端点和 schema 定义
+
+2. write_file 工具调用 #2 - 类型定义文件:
+   - file_path: "types/index.ts"
+   - content: TypeScript 类型定义，使用 // [COMMON] 和 // [FILE: <path>] 分组格式
+
+## 类型定义格式示例
+
+```typescript
+// ============================================================
+// 电商平台 - TypeScript 类型定义
+// ============================================================
+
+// [COMMON]
+export interface ApiError {
+  code: string;
+  message: string;
+}
+export interface SuccessResponse {
+  success: true;
+  message: string;
+}
+
+// [FILE: src/stores/userStore.ts]
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// [FILE: src/pages/Home.tsx]
+export interface HomePageData {
+  featuredProducts: Product[];
+  categories: Category[];
+}
+
+// [FILE: src/pages/Cart.tsx]
+export interface Cart {
+  items: CartItem[];
+  total: number;
+}
+```
+
+## 【关键要求】
+
+1. **必须为所有文件生成分组** - 包括但不限于：
+   - server/database/db.ts
+   - server/index.ts
+   - server/routes/auth.ts
+   - server/routes/products.ts
+   - server/routes/cart.ts
+   - server/routes/orders.ts
+   - src/App.tsx
+   - src/main.tsx
+   - src/services/api.ts
+   - 所有 src/pages/*.tsx 文件
+   - 所有 src/components/*.tsx 文件
+
+2. **// [FILE: <path>] 中的 <path> 必须与待生成文件列表中的路径完全一致**
+
+3. **不要遗漏任何文件** - 每个 TypeScript 文件都必须有对应的分组
+
+## 示例响应格式
+
+你的响应中应包含两个 tool_call，例如：
+
+tool_calls: [
+  {
+    "name": "write_file",
+    "arguments": {"file_path": "contracts/api.json", "content": "{"openapi": "3.0.0", ...}"}
+  },
+  {
+    "name": "write_file",
+    "arguments": {"file_path": "types/index.ts", "content": "// [COMMON]
+export interface ApiError {...}
+
+// [FILE: server/database/db.ts]
+export interface DbUser {...}
+
+// [FILE: server/routes/auth.ts]
+export interface JwtPayload {...}"}
+  }
+]
+
+请立即生成这两个文件，确保为所有文件都生成了类型定义分组，不要遗漏任何文件。

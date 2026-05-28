@@ -1,0 +1,156 @@
+# OrchestRouter 执行器配置示例文件
+# 复制此文件为 executor.yaml 并根据实际情况修改
+
+executor:
+  # ==================== 通用配置 ====================
+  general:
+    default_max_concurrency: 10      # 默认最大并发数
+    default_timeout: 60000           # 默认超时时间（毫秒）
+    enable_tracing: true             # 启用请求追踪
+    enable_monitoring: true          # 启用监控
+    log_level: "info"                # 日志级别：debug, info, warn, error
+
+  # ==================== 并发配置 ====================
+  concurrency:
+    max_concurrent: 50               # 全局最大并发数
+    adaptive: true                   # 启用自适应并发
+    timeout_ms: 30000                # 槽位获取超时时间（毫秒）
+    enable_priority_queue: true      # 启用优先级队列
+
+  # ==================== 重试配置 ====================
+  retry:
+    max_retries: 3                   # 最大重试次数
+    base_delay: 1000                 # 基础延迟时间（毫秒）
+    max_delay: 60000                 # 最大延迟时间（毫秒）
+    exponential_base: 2.0            # 指数退避基数
+    jitter: true                     # 启用抖动避免雷鸣群体效应
+    retryable_errors:                # 可重试的错误类型
+      - "TimeoutError"
+      - "NetworkError"
+      - "RateLimitError"
+      - "ServerError"
+      - "ConnectionError"
+    # 错误类型对应的基延迟配置（毫秒）
+    base_delays_by_error_type:
+      NETWORK_ERROR: 1000
+      RATE_LIMIT: 5000               # 更长，因为需要等待限流窗口恢复
+      SERVER_ERROR: 2000
+      TIMEOUT: 1000
+      VALIDATION_ERROR: 0            # 验证错误不重试
+
+  # ==================== 限流配置 ====================
+  rate_limit:
+    default_rps: 10                  # 默认每秒请求数
+    burst_capacity: 30               # 突发容量
+    enable_coordination: true        # 启用限流协调
+    health_check_factor: 0.1         # 健康检查限流系数（占正常限流的百分比）
+    # 模型特定限流配置（可选，优先使用模型注册表中的配置）
+    per_model:
+      gpt-4-turbo:
+        requests_per_second: 10
+        burst_capacity: 30
+      claude-3-opus:
+        requests_per_second: 8
+        burst_capacity: 25
+
+  # ==================== 成本控制配置 ====================
+  cost_control:
+    default_budget: 100.00           # 默认预算（美元）
+    safety_margin: 0.2               # 安全边际（20%）
+    conservative_estimation: true    # 保守估算
+    enable_real_time_tracking: true  # 启用实时跟踪
+
+  # ==================== 追踪配置 ====================
+  tracing:
+    enabled: true                    # 启用追踪
+    log_level: "info"                # 追踪日志级别
+    include_sensitive_data: false    # 是否包含敏感数据
+    sampling_rate: 1.0               # 采样率（1.0 = 100%, 0.1 = 10%）
+    sampling_enabled: true           # 是否启用采样
+    max_traces: 10000                # 最大追踪数
+
+  # ==================== 监控配置 ====================
+  monitoring:
+    enabled: true                    # 启用监控
+    metrics_collection: true         # 启用指标收集
+    performance_logging: true        # 启用性能日志
+    alert_thresholds:                # 告警阈值
+      error_rate: 0.05               # 错误率阈值（5%）
+      response_time: 5000            # 响应时间阈值（5 秒）
+      resource_usage: 0.8            # 资源使用率阈值（80%）
+
+  # ==================== 模型特定配置 ====================
+  model_specific:
+    gpt-4-turbo:
+      max_concurrency: 20
+      timeout: 60000
+      rate_limit:
+        requests_per_second: 10
+        burst_capacity: 30
+      retry_attempts: 3
+      preferred: true
+    claude-3-opus:
+      max_concurrency: 15
+      timeout: 60000
+      rate_limit:
+        requests_per_second: 8
+        burst_capacity: 25
+      retry_attempts: 3
+      preferred: true
+    gemini-2.0-flash:
+      max_concurrency: 60
+      timeout: 90000
+      rate_limit:
+        requests_per_second: 5
+        burst_capacity: 20
+      retry_attempts: 2
+      preferred: true
+    ollama-llama3:
+      max_concurrency: 4
+      timeout: 30000
+      rate_limit:
+        requests_per_second: 2
+        burst_capacity: 10
+      retry_attempts: 1
+      preferred: false
+
+  # ==================== 降级策略配置 ====================
+  fallback_strategy:
+    # 超时降级配置
+    timeout:
+      enabled: true
+      max_attempts: 3
+      timeout_per_attempt: 30000
+      backoff_multiplier: 1.5
+
+    # 预算降级配置
+    budget:
+      enabled: true
+      max_cost_reduction: 0.5        # 最多降低 50% 成本
+      alternative_search_depth: 5    # 最多查找 5 个替代模型
+
+    # 可用性降级配置
+    availability:
+      enabled: true
+      retry_on_unavailability: true
+      max_fallback_models: 3
+
+    # 全局降级配置
+    global:
+      max_total_fallbacks: 5         # 单个任务最多尝试 5 次降级
+      enable_chained_fallbacks: true # 是否启用链式降级
+      log_level: "info"              # 降级日志级别
+
+  # ==================== 健康检查配置 ====================
+  health_check:
+    interval: 60000                  # 健康检查间隔（毫秒）
+    timeout: 5000                    # 健康检查超时（毫秒）
+    enabled: true                    # 是否启用健康检查
+
+  # ==================== 系统协调器配置 ====================
+  system_coordinator:
+    cpu_threshold_high: 0.7          # CPU 高负载阈值
+    cpu_threshold_critical: 0.9      # CPU 临界负载阈值
+    memory_threshold_high: 0.7       # 内存高负载阈值
+    memory_threshold_critical: 0.9   # 内存临界负载阈值
+    check_interval: 10000            # 检查间隔（毫秒）

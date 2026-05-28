@@ -1,0 +1,240 @@
+{
+  "session_id": null,
+  "implementation_plan": {
+    "tech_stack": ["React 18", "TypeScript", "Node.js", "Express", "SQLite"],
+    "architecture_patterns": ["MVC", "RESTful API", "Component-based"],
+    "code_standards": [
+      "no_empty_imports",
+      "use_relative_paths",
+      "consistent_naming"
+    ],
+    "shared_context": {
+      "description": "电商平台全局约束 - 所有子任务必须遵循",
+      "types": {
+        "Product": {
+          "description": "商品实体",
+          "properties": {
+            "id": "number",
+            "name": "string",
+            "price": "number",
+            "stock": "number",
+            "category": "string",
+            "description": "string"
+          },
+          "required": ["id", "name", "price"]
+        },
+        "User": {
+          "description": "用户实体",
+          "properties": {
+            "id": "number",
+            "username": "string",
+            "email": "string",
+            "password": "string"
+          },
+          "required": ["id", "username", "email"]
+        },
+        "Order": {
+          "description": "订单实体",
+          "properties": {
+            "id": "number",
+            "userId": "number",
+            "products": "Array<{productId: number, quantity: number}>",
+            "total": "number",
+            "status": "string",
+            "createdAt": "string"
+          },
+          "required": ["id", "userId", "products", "total"]
+        },
+        "CartItem": {
+          "description": "购物车项",
+          "properties": {
+            "productId": "number",
+            "quantity": "number"
+          },
+          "required": ["productId", "quantity"]
+        }
+      },
+      "api_config": {
+        "baseURL": "http://localhost:3001/api",
+        "port": 3001
+      },
+      "file_naming": {
+        "services": "*.ts - api.ts, productService.ts, userService.ts, orderService.ts",
+        "forbidden_files": ["miscService.ts"]
+      },
+      "import_rules": [
+        "导入时不带 .ts/.tsx 后缀",
+        "使用相对路径 ../ 或 ./",
+        "禁止使用绝对路径"
+      ]
+    },
+    "best_practices": [
+      "只生成 deliverables 指定的文件，不要生成其他文件",
+      "不要生成测试文件（*.test.js, *.spec.js）",
+      "不要生成示例文件或文档文件",
+      "返回完整代码，不要返回占位符或 TODO",
+      "所有类型必须引用 shared_context.types 中定义的类型",
+      "不得在 deliverables 之外创建类型定义"
+    ]
+  },
+  "task": {
+    "title": "电商平台开发",
+    "description": "开发一个完整的电商平台，包含用户模块、商品模块、购物车模块、订单模块",
+    "requirement": "需要开发一个包含以下功能的电商平台：1. 用户模块：注册、登录、用户信息管理 2. 商品模块：商品列表、商品详情、商品搜索 3. 购物车模块：添加商品、修改数量、删除商品、清空购物车 4. 订单模块：创建订单、订单列表、订单详情 前端使用 React + TypeScript，后端使用 Node.js + Express + SQLite",
+    "deliverables": [
+      {
+        "description": "后端入口文件，配置 Express 服务器和路由",
+        "filePath": "backend/server.js",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "backend/server.js",
+          "dependsOn": ["backend/routes/*.js", "backend/services/*.js"]
+        }
+      },
+      {
+        "description": "数据库初始化和模型定义",
+        "filePath": "backend/db.js",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "backend/db.js",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "后端商品路由",
+        "filePath": "backend/routes/products.js",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "backend/routes/products.js",
+          "dependsOn": ["backend/db.js", "backend/services/productService.js"]
+        }
+      },
+      {
+        "description": "后端用户路由",
+        "filePath": "backend/routes/users.js",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "backend/routes/users.js",
+          "dependsOn": ["backend/db.js", "backend/services/userService.js"]
+        }
+      },
+      {
+        "description": "后端订单路由",
+        "filePath": "backend/routes/orders.js",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "backend/routes/orders.js",
+          "dependsOn": ["backend/db.js", "backend/services/orderService.js"]
+        }
+      },
+      {
+        "description": "后端购物车路由",
+        "filePath": "backend/routes/cart.js",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "backend/routes/cart.js",
+          "dependsOn": ["backend/db.js", "backend/services/cartService.js"]
+        }
+      },
+      {
+        "description": "商品服务层",
+        "filePath": "backend/services/productService.js",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "backend/services/productService.js",
+          "dependsOn": ["backend/db.js"]
+        }
+      },
+      {
+        "description": "用户服务层",
+        "filePath": "backend/services/userService.js",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "backend/services/userService.js",
+          "dependsOn": ["backend/db.js"]
+        }
+      },
+      {
+        "description": "订单服务层",
+        "filePath": "backend/services/orderService.js",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "backend/services/orderService.js",
+          "dependsOn": ["backend/db.js"]
+        }
+      },
+      {
+        "description": "购物车服务层",
+        "filePath": "backend/services/cartService.js",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "backend/services/cartService.js",
+          "dependsOn": ["backend/db.js"]
+        }
+      },
+      {
+        "description": "前端入口文件",
+        "filePath": "frontend/src/App.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "frontend/src/App.tsx",
+          "dependsOn": ["frontend/src/components/*.tsx", "frontend/src/pages/*.tsx"]
+        }
+      },
+      {
+        "description": "类型定义文件",
+        "filePath": "frontend/src/types/index.ts",
+        "type": "model",
+        "integrationHints": {
+          "targetFile": "frontend/src/types/index.ts",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "API 服务层",
+        "filePath": "frontend/src/services/api.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "frontend/src/services/api.ts",
+          "dependsOn": ["frontend/src/types/index.ts"]
+        }
+      },
+      {
+        "description": "商品列表页",
+        "filePath": "frontend/src/pages/ProductList.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "frontend/src/pages/ProductList.tsx",
+          "dependsOn": ["frontend/src/types/index.ts", "frontend/src/services/api.ts"]
+        }
+      },
+      {
+        "description": "购物车页",
+        "filePath": "frontend/src/pages/Cart.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "frontend/src/pages/Cart.tsx",
+          "dependsOn": ["frontend/src/types/index.ts", "frontend/src/services/api.ts"]
+        }
+      },
+      {
+        "description": "订单页",
+        "filePath": "frontend/src/pages/Orders.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "frontend/src/pages/Orders.tsx",
+          "dependsOn": ["frontend/src/types/index.ts", "frontend/src/services/api.ts"]
+        }
+      },
+      {
+        "description": "前端首页",
+        "filePath": "frontend/src/pages/Home.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "frontend/src/pages/Home.tsx",
+          "dependsOn": ["frontend/src/types/index.ts", "frontend/src/services/api.ts"]
+        }
+      }
+    ]
+  }
+}

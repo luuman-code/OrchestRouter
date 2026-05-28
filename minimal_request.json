@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请创建一个简单的index.html文件，包含标题'AI智能日程表'和基本的HTML结构。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "project": "simple_scheduler",
+  "outputDir": "C:\\\\Users\\\\LWB\\\\Desktop\\\\AI intelligent schedule planner",
+  "maxTokens": 1000
+}

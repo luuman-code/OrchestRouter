@@ -1,0 +1,95 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express"],
+    "contract_first": true,
+    "shared_context": {
+      "api_config": {
+        "baseURL": "/api/v1",
+        "auth": "Bearer Token"
+      }
+    },
+    "best_practices": [
+      "使用 TypeScript 严格类型",
+      "RESTful API 设计",
+      "前后端分离"
+    ],
+    "conflict_sensitive_groups": [
+      {
+        "name": "类型定义",
+        "priority": 100,
+        "mergeMode": "selected_only",
+        "filePatterns": ["types/index.ts"]
+      },
+      {
+        "name": "后端入口",
+        "priority": 80,
+        "mergeMode": "merge",
+        "filePatterns": ["server/index.ts", "server/database/db.ts"]
+      },
+      {
+        "name": "后端路由",
+        "priority": 70,
+        "mergeMode": "merge",
+        "filePatterns": ["server/routes/*.ts"]
+      },
+      {
+        "name": "前端核心",
+        "priority": 60,
+        "mergeMode": "merge",
+        "filePatterns": ["src/App.tsx", "src/main.tsx", "src/services/api.ts"]
+      },
+      {
+        "name": "前端页面",
+        "priority": 50,
+        "mergeMode": "merge",
+        "filePatterns": ["src/pages/*.tsx"]
+      }
+    ]
+  },
+  "task": {
+    "title": "测试契约按需注入",
+    "requirement": "创建一个简单的用户认证系统，包含注册、登录、获取用户信息功能",
+    "deliverables": [
+      {
+        "description": "服务端入口和数据库连接",
+        "filePath": "server/index.ts",
+        "type": "api"
+      },
+      {
+        "description": "数据库模型",
+        "filePath": "server/database/db.ts",
+        "type": "logic"
+      },
+      {
+        "description": "认证路由",
+        "filePath": "server/routes/auth.ts",
+        "type": "api"
+      },
+      {
+        "description": "产品路由",
+        "filePath": "server/routes/products.ts",
+        "type": "api"
+      },
+      {
+        "description": "用户路由",
+        "filePath": "server/routes/users.ts",
+        "type": "api"
+      },
+      {
+        "description": "前端API服务",
+        "filePath": "src/services/api.ts",
+        "type": "logic"
+      },
+      {
+        "description": "主页",
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "登录页",
+        "filePath": "src/pages/Login.tsx",
+        "type": "ui"
+      }
+    ]
+  }
+}

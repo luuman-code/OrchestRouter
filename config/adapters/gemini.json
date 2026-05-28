@@ -1,0 +1,38 @@
+{
+  "$comment": "Google Gemini 格式适配器",
+  "name": "gemini",
+  "request": {
+    "format": "gemini",
+    "endpoint": "/v1beta/models/{model}:generateContent",
+    "contentField": "contents",
+    "modelField": "model",
+    "authType": "api-key",
+    "authHeader": "x-goog-api-key",
+    "authLocation": "query",
+    "requiredHeaders": {
+      "Content-Type": "application/json"
+    },
+    "optionalParams": ["temperature", "maxOutputTokens", "topP", "topK", "safetySettings", "stream"],
+    "contentFormat": "gemini-style",
+    "contentItemFormat": {
+      "roleField": "role",
+      "partsField": "parts",
+      "textField": "text"
+    },
+    "generationConfig": true
+  },
+  "response": {
+    "format": "gemini",
+    "statusField": "candidates",
+    "contentPath": "candidates[0].content.parts",
+    "contentExtractor": {
+      "type": "map",
+      "extractField": "text"
+    },
+    "usageFields": {
+      "input": "usageMetadata.promptTokenCount",
+      "output": "usageMetadata.candidatesTokenCount",
+      "total": "usageMetadata.totalTokenCount"
+    }
+  }
+}

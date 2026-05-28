@@ -1,0 +1,41 @@
+# 【已废弃】此配置文件不再使用，请使用 config/config.json
+# 模型选择器配置文件
+selector:
+  # 默认约束
+  max_cost_per_task: 0.50    # 单任务最大成本$0.5
+  daily_budget: 10.00        # 日预算$10
+  preferred_providers: ["anthropic", "google", "openai"]
+  quality_first: false       # false = 成本优先，true = 质量优先
+
+  # 自定义选择规则
+  selection_rules:
+    custom: []
+    # 示例：添加自定义规则
+    # - taskTypes: ["experimental"]
+    #   preferredModels: ["claude-opus-4-6"]
+    #   fallbackModels: ["gpt-4o"]
+    #   reason: "实验性任务需要最高质量模型"
+    #   weight: 1.2
+
+  # 降级策略
+  fallback:
+    max_fallback_depth: 2      # 最多降级 2 层
+    error_rate_threshold: 0.3  # 错误率超过 30% 触发降级
+    latency_threshold_ms: 5000 # 延迟超过 5 秒触发降级
+    rate_limit_threshold: 10   # 剩余配额低于 10 触发降级
+
+  # 监控配置
+  monitoring:
+    enabled: true
+    status_check_interval: 60000  # 每 60 秒检查一次模型状态
+    log_selection_reason: true    # 记录选择原因
+    track_performance: true       # 跟踪性能指标
+    max_history_size: 1000        # 最大历史记录数
+
+  # 策略配置
+  strategy:
+    enable_learning: true        # 启用学习型选择
+    learning_window: 100         # 学习窗口大小（最近 100 次任务）
+    quality_weight: 0.4          # 质量权重
+    cost_weight: 0.4             # 成本权重
+    speed_weight: 0.2            # 速度权重

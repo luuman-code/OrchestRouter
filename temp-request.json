@@ -1,0 +1,73 @@
+{
+  "session_id": null,
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Vite", "Tailwind CSS"],
+    "architecture_patterns": ["SPA", "组件化"],
+    "code_standards": ["no_empty_imports", "use_relative_paths", "no_absolute_paths"],
+    "path_conventions": {
+      "files": "kebab-case",
+      "components": "PascalCase",
+      "functions": "camelCase"
+    },
+    "dependencies": ["react", "react-dom", "react-router-dom", "zustand", "tailwindcss"],
+    "contract_first": true,
+    "shared_context": {
+      "description": "全局约束描述 - 所有子任务必须遵循",
+      "type_source": "src/types/index.ts",
+      "file_naming": {
+        "forbidden_files": ["UserService.ts", "ProductService.ts", "MockService.ts"]
+      },
+      "import_rules": [
+        "导入时不带 .ts/.tsx 后缀",
+        "使用相对路径 ../ 或 ./",
+        "禁止使用绝对路径"
+      ]
+    },
+    "best_practices": [
+      "只生成 deliverables 指定的文件，不要生成其他文件",
+      "不要生成测试文件",
+      "不要生成文档文件",
+      "返回完整代码，不要返回占位符",
+      "类型定义必须从 shared_context.type_source 指向的文件导入",
+      "禁止在 deliverables 之外生成组件或创建文件",
+      "禁止生成未在 deliverables 中定义的路由、上下文、工具函数或样式文件"
+    ]
+  },
+  "task": {
+    "title": "电商平台",
+    "description": "创建一个功能完整的电商平台",
+    "requirement": "包含用户登录注册、商品列表、商品详情、购物车、订单管理、结算页面等核心功能。数据使用本地状态管理，支持添加到购物车、修改数量、删除商品等操作。",
+    "deliverables": [
+      {"description": "Vite 项目配置", "filePath": "vite.config.ts", "type": "config", "integrationHints": {"targetFile": "vite.config.ts"}},
+      {"description": "TypeScript 配置", "filePath": "tsconfig.json", "type": "config", "integrationHints": {"targetFile": "tsconfig.json"}},
+      {"description": "Tailwind CSS 配置", "filePath": "tailwind.config.js", "type": "config", "integrationHints": {"targetFile": "tailwind.config.js"}},
+      {"description": "PostCSS 配置", "filePath": "postcss.config.js", "type": "config", "integrationHints": {"targetFile": "postcss.config.js"}},
+      {"description": "HTML 入口", "filePath": "index.html", "type": "ui", "integrationHints": {"targetFile": "index.html"}},
+      {"description": "主入口文件", "filePath": "src/main.tsx", "type": "logic", "integrationHints": {"targetFile": "src/main.tsx"}},
+      {"description": "全局样式", "filePath": "src/index.css", "type": "style", "integrationHints": {"targetFile": "src/index.css"}},
+      {"description": "应用根组件", "filePath": "src/App.tsx", "type": "ui", "integrationHints": {"targetFile": "src/App.tsx"}},
+      {"description": "类型定义", "filePath": "src/types/index.ts", "type": "model", "integrationHints": {"targetFile": "src/types/index.ts"}},
+      {"description": "商品类型", "filePath": "src/types/product.ts", "type": "model", "integrationHints": {"targetFile": "src/types/product.ts"}},
+      {"description": "购物车类型", "filePath": "src/types/cart.ts", "type": "model", "integrationHints": {"targetFile": "src/types/cart.ts"}},
+      {"description": "用户类型", "filePath": "src/types/user.ts", "type": "model", "integrationHints": {"targetFile": "src/types/user.ts"}},
+      {"description": "商品状态管理", "filePath": "src/stores/productStore.ts", "type": "logic", "integrationHints": {"targetFile": "src/stores/productStore.ts"}},
+      {"description": "购物车状态管理", "filePath": "src/stores/cartStore.ts", "type": "logic", "integrationHints": {"targetFile": "src/stores/cartStore.ts"}},
+      {"description": "用户状态管理", "filePath": "src/stores/userStore.ts", "type": "logic", "integrationHints": {"targetFile": "src/stores/userStore.ts"}},
+      {"description": "路由配置", "filePath": "src/router/index.tsx", "type": "logic", "integrationHints": {"targetFile": "src/router/index.tsx"}},
+      {"description": "导航栏", "filePath": "src/components/Header.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/Header.tsx"}},
+      {"description": "页脚", "filePath": "src/components/Footer.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/Footer.tsx"}},
+      {"description": "商品卡片", "filePath": "src/components/ProductCard.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/ProductCard.tsx"}},
+      {"description": "购物车项", "filePath": "src/components/CartItem.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/CartItem.tsx"}},
+      {"description": "登录表单", "filePath": "src/components/LoginForm.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/LoginForm.tsx"}},
+      {"description": "注册表单", "filePath": "src/components/RegisterForm.tsx", "type": "ui", "integrationHints": {"targetFile": "src/components/RegisterForm.tsx"}},
+      {"description": "首页", "filePath": "src/pages/Home.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Home.tsx"}},
+      {"description": "商品列表页", "filePath": "src/pages/ProductList.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/ProductList.tsx"}},
+      {"description": "商品详情页", "filePath": "src/pages/ProductDetail.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/ProductDetail.tsx"}},
+      {"description": "购物车页", "filePath": "src/pages/Cart.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Cart.tsx"}},
+      {"description": "结算页", "filePath": "src/pages/Checkout.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Checkout.tsx"}},
+      {"description": "订单页", "filePath": "src/pages/Orders.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Orders.tsx"}},
+      {"description": "个人中心", "filePath": "src/pages/Profile.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Profile.tsx"}},
+      {"description": "登录注册页", "filePath": "src/pages/Auth.tsx", "type": "ui", "integrationHints": {"targetFile": "src/pages/Auth.tsx"}}
+    ]
+  }
+}

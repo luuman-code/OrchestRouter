@@ -1,0 +1,23 @@
+{
+  "$comment": "转接口配置中心 - 适配器索引",
+  "enabled": true,
+  "defaultAdapter": "openai-compatible",
+  "adapters": {
+    "openai-compatible": "./openai-compatible.json",
+    "anthropic-compatible": "./anthropic-compatible.json",
+    "gemini": "./gemini.json",
+    "ollama": "./ollama.json"
+  },
+  "providerMapping": {
+    "openai": "openai-compatible",
+    "deepseek": "openai-compatible",
+    "bailian": "openai-compatible",
+    "aliyun": "openai-compatible",
+    "minimax": "anthropic-compatible",
+    "moonshot": "openai-compatible",
+    "zhipu": "openai-compatible",
+    "anthropic": "anthropic-compatible",
+    "gemini": "gemini",
+    "ollama": "ollama"
+  }
+}

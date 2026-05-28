@@ -1,0 +1,26 @@
+{
+  "$comment": "Ollama 本地模型适配器",
+  "name": "ollama",
+  "request": {
+    "format": "ollama",
+    "endpoint": "/api/chat",
+    "contentField": "messages",
+    "modelField": "model",
+    "authType": "none",
+    "requiredHeaders": {
+      "Content-Type": "application/json"
+    },
+    "optionalParams": ["temperature", "num_predict", "top_p", "top_k", "seed", "num_ctx", "stream"],
+    "optionsField": true
+  },
+  "response": {
+    "format": "ollama",
+    "statusField": "done",
+    "contentPath": "message.content",
+    "usageFields": {
+      "input": "prompt_eval_count",
+      "output": "eval_count",
+      "total": null
+    }
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express", "SQLite"],
+    "contract_first": true
+  },
+  "task": {
+    "title": "简单电商平台",
+    "requirement": "开发一个包含用户认证、商品列表展示、购物车、订单管理的完整电商平台",
+    "deliverables": [
+      {
+        "filePath": "server/index.ts",
+        "type": "logic",
+        "description": "后端服务器入口"
+      },
+      {
+        "filePath": "server/routes/auth.ts",
+        "type": "api",
+        "description": "用户认证路由"
+      },
+      {
+        "filePath": "server/routes/products.ts",
+        "type": "api",
+        "description": "商品路由"
+      },
+      {
+        "filePath": "server/routes/orders.ts",
+        "type": "api",
+        "description": "订单路由"
+      },
+      {
+        "filePath": "server/routes/cart.ts",
+        "type": "api",
+        "description": "购物车路由"
+      },
+      {
+        "filePath": "server/routes/users.ts",
+        "type": "api",
+        "description": "用户信息路由"
+      },
+      {
+        "filePath": "server/database/db.ts",
+        "type": "logic",
+        "description": "数据库初始化"
+      },
+      {
+        "filePath": "server/middleware/auth.ts",
+        "type": "logic",
+        "description": "认证中间件"
+      },
+      {
+        "filePath": "server/middleware/validation.ts",
+        "type": "logic",
+        "description": "验证中间件"
+      },
+      {
+        "filePath": "server/middleware/errorHandler.ts",
+        "type": "logic",
+        "description": "错误处理中间件"
+      },
+      {
+        "filePath": "server/utils/jwt.ts",
+        "type": "logic",
+        "description": "JWT工具"
+      },
+      {
+        "filePath": "server/utils/password.ts",
+        "type": "logic",
+        "description": "密码加密工具"
+      },
+      {
+        "filePath": "src/App.tsx",
+        "type": "ui",
+        "description": "React根组件"
+      },
+      {
+        "filePath": "src/main.tsx",
+        "type": "ui",
+        "description": "应用入口"
+      },
+      {
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui",
+        "description": "首页"
+      },
+      {
+        "filePath": "src/pages/Login.tsx",
+        "type": "ui",
+        "description": "登录页"
+      },
+      {
+        "filePath": "src/pages/Register.tsx",
+        "type": "ui",
+        "description": "注册页"
+      },
+      {
+        "filePath": "src/pages/ProductList.tsx",
+        "type": "ui",
+        "description": "商品列表页"
+      },
+      {
+        "filePath": "src/pages/ProductDetail.tsx",
+        "type": "ui",
+        "description": "商品详情页"
+      },
+      {
+        "filePath": "src/pages/Cart.tsx",
+        "type": "ui",
+        "description": "购物车页"
+      },
+      {
+        "filePath": "src/pages/Checkout.tsx",
+        "type": "ui",
+        "description": "结算页"
+      },
+      {
+        "filePath": "src/pages/OrderList.tsx",
+        "type": "ui",
+        "description": "订单列表页"
+      },
+      {
+        "filePath": "src/pages/OrderDetail.tsx",
+        "type": "ui",
+        "description": "订单详情页"
+      },
+      {
+        "filePath": "src/pages/Profile.tsx",
+        "type": "ui",
+        "description": "用户资料页"
+      },
+      {
+        "filePath": "src/components/Navbar.tsx",
+        "type": "ui",
+        "description": "导航栏组件"
+      },
+      {
+        "filePath": "src/components/Footer.tsx",
+        "type": "ui",
+        "description": "页脚组件"
+      },
+      {
+        "filePath": "src/components/ProductCard.tsx",
+        "type": "ui",
+        "description": "商品卡片组件"
+      },
+      {
+        "filePath": "src/components/CartItem.tsx",
+        "type": "ui",
+        "description": "购物车项组件"
+      },
+      {
+        "filePath": "src/components/OrderCard.tsx",
+        "type": "ui",
+        "description": "订单卡片组件"
+      },
+      {
+        "filePath": "src/components/LoadingSpinner.tsx",
+        "type": "ui",
+        "description": "加载Spinner组件"
+      },
+      {
+        "filePath": "src/components/ErrorMessage.tsx",
+        "type": "ui",
+        "description": "错误消息组件"
+      },
+      {
+        "filePath": "src/components/ProtectedRoute.tsx",
+        "type": "ui",
+        "description": "受保护路由组件"
+      },
+      {
+        "filePath": "src/contexts/AuthContext.tsx",
+        "type": "logic",
+        "description": "认证上下文"
+      },
+      {
+        "filePath": "src/contexts/CartContext.tsx",
+        "type": "logic",
+        "description": "购物车上下文"
+      },
+      {
+        "filePath": "src/contexts/ThemeContext.tsx",
+        "type": "logic",
+        "description": "主题上下文"
+      },
+      {
+        "filePath": "src/services/api.ts",
+        "type": "logic",
+        "description": "API服务"
+      },
+      {
+        "filePath": "src/hooks/useAuth.ts",
+        "type": "logic",
+        "description": "认证Hook"
+      },
+      {
+        "filePath": "src/hooks/useCart.ts",
+        "type": "logic",
+        "description": "购物车Hook"
+      }
+    ]
+  }
+}

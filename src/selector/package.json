@@ -1,0 +1,20 @@
+{
+  "name": "model-selector",
+  "version": "1.0.0",
+  "description": "智能模型选择器 - 根据任务类型、成本、质量等因素选择最合适的 LLM 模型",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "keywords": [
+    "model-selector",
+    "llm",
+    "ai",
+    "cost-optimization"
+  ],
+  "author": "",
+  "license": "MIT"
+}

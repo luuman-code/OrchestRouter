@@ -1,0 +1,310 @@
+{
+  "$schema": "./schema.json",
+  "$comment": "OrchestRouter 统一配置文件 - 参考 CCR Router 格式",
+  "$version": "1.0.0",
+
+  "system": {
+    "host": "127.0.0.1",
+    "port": 3458,
+    "debug": false,
+    "logLevel": "info",
+    "apiTimeoutMs": 600000,
+    "maxConcurrency": 10
+  },
+
+  "Providers": [
+    {
+      "name": "aliyun",
+      "api_base_url": "https://coding.dashscope.aliyuncs.com/v1",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "api_key": "",
+      "models": [
+        {
+          "id": "qwen3-coder-plus",
+          "name": "Qwen3 Coder Plus",
+          "api_model_id": "qwen-coder-plus-latest",
+          "capabilities": ["code", "logic", "api"],
+          "strengths": ["代码生成", "逻辑推理", "API 开发"],
+          "pricing": { "input": 0.00005, "output": 0.0001 },
+          "context_limit": 32768,
+          "quality_score": 8.5,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000
+        },
+        {
+          "id": "qwen3-coder-next",
+          "name": "Qwen3 Coder Next",
+          "api_model_id": "qwen-coder-plus-latest",
+          "capabilities": ["code", "complex-tasks"],
+          "strengths": ["复杂代码任务", "高级推理"],
+          "pricing": { "input": 0.00007, "output": 0.00014 },
+          "context_limit": 32768,
+          "quality_score": 9.0,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen3.5 Plus",
+          "api_model_id": "qwen-plus-latest",
+          "capabilities": ["long-context", "complex-tasks"],
+          "strengths": ["长上下文处理", "复杂任务"],
+          "pricing": { "input": 0.0001, "output": 0.0002 },
+          "context_limit": 32768,
+          "quality_score": 9.2,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 5000
+        },
+        {
+          "id": "qwen3-max-2026-01-23",
+          "name": "Qwen3 Max 2026-01-23",
+          "api_model_id": "qwen-max-latest",
+          "capabilities": ["max-context", "reasoning"],
+          "strengths": ["最大上下文", "深度推理"],
+          "pricing": { "input": 0.0002, "output": 0.0004 },
+          "context_limit": 32768,
+          "quality_score": 9.5,
+          "speed": "slow",
+          "max_concurrency": 10,
+          "response_time": 8000
+        },
+        {
+          "id": "kimi-k2.5",
+          "name": "Kimi K2.5",
+          "api_model_id": "kimi-latest",
+          "capabilities": ["long-context", "web-search"],
+          "strengths": ["长文档处理", "网页搜索"],
+          "pricing": { "input": 0.00012, "output": 0.00024 },
+          "context_limit": 32768,
+          "quality_score": 8.7,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000
+        },
+        {
+          "id": "glm-5",
+          "name": "GLM-5",
+          "api_model_id": "glm-4",
+          "capabilities": ["reasoning", "coding"],
+          "strengths": ["逻辑推理", "代码生成"],
+          "pricing": { "input": 0.0001, "output": 0.0002 },
+          "context_limit": 16384,
+          "quality_score": 8.8,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000
+        },
+        {
+          "id": "glm-4.7",
+          "name": "GLM-4.7",
+          "api_model_id": "glm-4-air",
+          "capabilities": ["balanced", "efficient"],
+          "strengths": ["平衡性能", "高效"],
+          "pricing": { "input": 0.00007, "output": 0.00014 },
+          "context_limit": 16384,
+          "quality_score": 8.2,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000
+        },
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MiniMax M2.5",
+          "api_model_id": "MiniMax-M2.5",
+          "capabilities": ["balanced", "general"],
+          "strengths": ["平衡性能", "通用任务"],
+          "pricing": { "input": 0.00008, "output": 0.00016 },
+          "context_limit": 32768,
+          "quality_score": 8.0,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000
+        }
+      ]
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/v1",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "api_key": "",
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "name": "DeepSeek Chat",
+          "api_model_id": "deepseek-chat",
+          "capabilities": ["chat", "coding"],
+          "strengths": ["对话", "代码编写"],
+          "pricing": { "input": 0.000014, "output": 0.000028 },
+          "context_limit": 128000,
+          "quality_score": 7.5,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000
+        },
+        {
+          "id": "deepseek-reasoner",
+          "name": "DeepSeek Reasoner",
+          "api_model_id": "deepseek-reasoner",
+          "capabilities": ["reasoning", "complex-tasks"],
+          "strengths": ["复杂推理", "问题解决"],
+          "pricing": { "input": 0.000028, "output": 0.000056 },
+          "context_limit": 128000,
+          "quality_score": 8.5,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 7000
+        }
+      ]
+    },
+    {
+      "name": "google",
+      "api_base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "api_key_env": "GEMINI_API_KEY",
+      "api_key": "",
+      "models": [
+        {
+          "id": "gemini-3.1-pro-preview",
+          "name": "Gemini 3.1 Pro Preview",
+          "api_model_id": "gemini-3.1-pro-preview",
+          "capabilities": ["multi-modal", "reasoning"],
+          "strengths": ["多模态", "复杂推理"],
+          "pricing": { "input": 0.000075, "output": 0.0003 },
+          "context_limit": 1048576,
+          "quality_score": 9.0,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 5000
+        }
+      ]
+    },
+    {
+      "name": "openai",
+      "api_base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "api_key": "",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "api_model_id": "gpt-4o",
+          "capabilities": ["chat", "coding", "reasoning"],
+          "strengths": ["通用任务", "代码生成"],
+          "pricing": { "input": 0.000005, "output": 0.000015 },
+          "context_limit": 128000,
+          "quality_score": 9.0,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 3000
+        },
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "api_model_id": "gpt-4o-mini",
+          "capabilities": ["chat", "coding"],
+          "strengths": ["性价比", "快速响应"],
+          "pricing": { "input": 0.00000015, "output": 0.0000006 },
+          "context_limit": 128000,
+          "quality_score": 8.0,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 2000
+        }
+      ]
+    },
+    {
+      "name": "anthropic",
+      "api_base_url": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "api_key": "",
+      "models": [
+        {
+          "id": "claude-sonnet-4-6",
+          "name": "Claude Sonnet 4.6",
+          "api_model_id": "claude-sonnet-4-6",
+          "capabilities": ["chat", "coding", "reasoning"],
+          "strengths": ["平衡性能", "代码质量"],
+          "pricing": { "input": 0.000003, "output": 0.000015 },
+          "context_limit": 200000,
+          "quality_score": 9.2,
+          "speed": "fast",
+          "max_concurrency": 10,
+          "response_time": 4000
+        },
+        {
+          "id": "claude-opus-4-6",
+          "name": "Claude Opus 4.6",
+          "api_model_id": "claude-opus-4-6",
+          "capabilities": ["chat", "coding", "reasoning", "complex-tasks"],
+          "strengths": ["最高质量", "复杂任务"],
+          "pricing": { "input": 0.000015, "output": 0.000075 },
+          "context_limit": 200000,
+          "quality_score": 9.8,
+          "speed": "medium",
+          "max_concurrency": 10,
+          "response_time": 6000
+        }
+      ]
+    },
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/api",
+      "api_key_env": "",
+      "api_key": "",
+      "models": [
+        {
+          "id": "llama3.2",
+          "name": "Llama 3.2",
+          "api_model_id": "llama3.2",
+          "capabilities": ["chat", "local"],
+          "strengths": ["本地运行", "隐私保护"],
+          "pricing": { "input": 0, "output": 0 },
+          "context_limit": 8192,
+          "quality_score": 7.0,
+          "speed": "fast",
+          "max_concurrency": 5,
+          "response_time": 2000
+        }
+      ]
+    }
+  ],
+
+  "selector": {
+    "default": "aliyun,qwen3-coder-plus",
+    "background": "aliyun,qwen3-coder-plus",
+    "think": "aliyun,qwen3-max-2026-01-23",
+    "longContext": "aliyun,qwen3.5-plus",
+    "longContextThreshold": 100000,
+    "webSearch": "aliyun,kimi-k2.5",
+    "image": "aliyun,qwen3-coder-plus",
+    "code": "aliyun,qwen3-coder-next",
+    "reasoning": "deepseek,deepseek-reasoner"
+  },
+
+  "costControl": {
+    "dailyBudget": 10.00,
+    "maxCostPerTask": 0.50,
+    "qualityFirst": false,
+    "safetyMargin": 0.2,
+    "conservativeEstimation": true
+  },
+
+  "executor": {
+    "defaultMaxConcurrency": 10,
+    "defaultTimeout": 60000,
+    "enableTracing": true,
+    "enableMonitoring": true,
+    "retry": {
+      "maxRetries": 3,
+      "baseDelay": 1000,
+      "exponentialBase": 2.0,
+      "jitter": true
+    },
+    "rateLimit": {
+      "defaultRps": 10,
+      "burstCapacity": 30
+    }
+  }
+}

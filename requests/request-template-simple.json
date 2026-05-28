@@ -1,0 +1,24 @@
+{
+  "$schema": "../schemas/orchestrator-request-schema.json",
+  "$comment": "简化请求模板 - 默认单文件任务模式（enable_merge_strategy: false）",
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js"],
+    "contract_first": true
+  },
+  "task": {
+    "title": "任务标题",
+    "requirement": "简要需求描述"
+  },
+  "task_details": {
+    "deliverables": [
+      {
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui",
+        "description": "首页组件"
+      }
+    ]
+  },
+  "$comment_options": "可选配置（默认已启用单文件任务模式）：",
+  "$comment_enable_merge": "如果要启用合并策略（将多个文件合并到一个任务），添加以下配置：",
+  "$comment_example": "\"implementation_plan\": { \"enable_merge_strategy\": true, \"conflict_sensitive_groups\": [...] }"
+}

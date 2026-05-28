@@ -1,0 +1,26 @@
+{
+  "task": {
+    "title": "创建待办事项应用",
+    "description": "创建一个待办事项应用，必须包含以下三个文件：1. index.html - 包含基本的 HTML 结构和待办事项界面 2. style.css - 包含页面样式和布局 3. script.js - 包含添加、删除、标记完成待办事项的 JavaScript 功能。严格按照这三个文件来实现，不要聚合到一个文件中。",
+    "deliverables": [
+      {
+        "description": "创建 HTML 文件，包含基本的 HTML 结构和待办事项界面",
+        "filePath": "index.html",
+        "type": "html"
+      },
+      {
+        "description": "创建 CSS 文件，包含页面样式和布局",
+        "filePath": "style.css",
+        "type": "css"
+      },
+      {
+        "description": "创建 JavaScript 文件，包含添加、删除、标记完成待办事项的功能",
+        "filePath": "script.js",
+        "type": "javascript"
+      }
+    ]
+  },
+  "model": "qwen3.5-plus",
+  "max_tokens": 4096,
+  "temperature": 0.7
+}

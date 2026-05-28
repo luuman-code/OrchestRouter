@@ -1,0 +1,11 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "创建一个待办事项应用，必须包含以下三个文件：1. index.html - 包含基本的HTML结构和待办事项界面 2. style.css - 包含页面样式和布局 3. script.js - 包含添加、删除、标记完成待办事项的JavaScript功能。严格按照这三个文件来实现，不要聚合到一个文件中。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "max_tokens": 4096,
+  "temperature": 0.7
+}

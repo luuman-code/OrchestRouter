@@ -1,0 +1,222 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express", "SQLite"],
+    "architecture_patterns": ["前后端分离", "RESTful API", "分层架构"],
+    "code_standards": [
+      "no_empty_imports",
+      "use_relative_paths",
+      "consistent_naming"
+    ],
+    "contract_first": true,
+    "conflict_sensitive_groups": [
+      {
+        "description": "共享类型定义（由契约生成阶段自动生成）",
+        "strategy": "strong_coupling",
+        "priority": 100,
+        "mergeMode": "selected_only",
+        "files": ["types/index.ts"]
+      },
+      {
+        "description": "项目构建配置",
+        "strategy": "path_affinity",
+        "priority": 90,
+        "maxDepth": 2,
+        "files": [
+          "package.json",
+          "vite.config.js",
+          "tsconfig.json"
+        ]
+      },
+      {
+        "description": "后端入口+数据库",
+        "strategy": "strong_coupling",
+        "priority": 80,
+        "mergeMode": "full_merge",
+        "files": ["server/database/db.ts", "server/index.ts"]
+      },
+      {
+        "description": "后端路由组（循环依赖必须在同组）",
+        "strategy": "strong_coupling",
+        "priority": 70,
+        "mergeMode": "full_merge",
+        "files": [
+          "server/routes/auth.ts",
+          "server/routes/products.ts",
+          "server/routes/cart.ts",
+          "server/routes/orders.ts"
+        ]
+      },
+      {
+        "description": "前端核心层",
+        "strategy": "strong_coupling",
+        "priority": 60,
+        "mergeMode": "full_merge",
+        "files": ["src/App.tsx", "src/main.tsx", "src/services/api.ts"]
+      },
+      {
+        "description": "前端页面层",
+        "strategy": "strong_coupling",
+        "priority": 50,
+        "mergeMode": "full_merge",
+        "files": [
+          "src/pages/Home.tsx",
+          "src/pages/Login.tsx",
+          "src/pages/Register.tsx",
+          "src/pages/ProductList.tsx",
+          "src/pages/ProductDetail.tsx",
+          "src/pages/Cart.tsx",
+          "src/pages/OrderList.tsx",
+          "src/pages/OrderDetail.tsx"
+        ]
+      },
+      {
+        "description": "前端组件层",
+        "strategy": "strong_coupling",
+        "priority": 40,
+        "mergeMode": "full_merge",
+        "files": [
+          "src/components/Header.tsx",
+          "src/components/ProductCard.tsx",
+          "src/components/CartItem.tsx",
+          "src/components/Button.tsx",
+          "src/components/Input.tsx",
+          "src/components/Modal.tsx",
+          "src/components/Loading.tsx"
+        ]
+      }
+    ]
+  },
+  "task": {
+    "title": "电商平台后端API",
+    "description": "电商平台后端服务",
+    "requirement": "生成 deliverables 列表中指定的文件",
+    "deliverables": [
+      {
+        "description": "数据库初始化",
+        "filePath": "server/database/db.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "server/database/db.ts",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "后端服务器入口",
+        "filePath": "server/index.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "server/index.ts",
+          "dependsOn": ["server/database/db.ts"]
+        }
+      },
+      {
+        "description": "认证路由",
+        "filePath": "server/routes/auth.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/auth.ts",
+          "dependsOn": ["server/database/db.ts"]
+        }
+      },
+      {
+        "description": "商品路由",
+        "filePath": "server/routes/products.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/products.ts",
+          "dependsOn": ["server/database/db.ts"]
+        }
+      },
+      {
+        "description": "购物车路由",
+        "filePath": "server/routes/cart.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/cart.ts",
+          "dependsOn": ["server/database/db.ts", "server/routes/auth.ts"]
+        }
+      },
+      {
+        "description": "订单路由",
+        "filePath": "server/routes/orders.ts",
+        "type": "api",
+        "integrationHints": {
+          "targetFile": "server/routes/orders.ts",
+          "dependsOn": ["server/database/db.ts", "server/routes/auth.ts"]
+        }
+      },
+      {
+        "description": "前端 API 服务层",
+        "filePath": "src/services/api.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "src/services/api.ts",
+          "dependsOn": ["types/index.ts"]
+        }
+      },
+      {
+        "description": "前端主入口",
+        "filePath": "src/App.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/App.tsx",
+          "dependsOn": ["src/services/api.ts"]
+        }
+      },
+      {
+        "description": "首页",
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Home.tsx",
+          "dependsOn": ["src/services/api.ts"]
+        }
+      },
+      {
+        "description": "登录页面",
+        "filePath": "src/pages/Login.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Login.tsx",
+          "dependsOn": ["src/services/api.ts"]
+        }
+      },
+      {
+        "description": "注册页面",
+        "filePath": "src/pages/Register.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/pages/Register.tsx",
+          "dependsOn": ["src/services/api.ts"]
+        }
+      },
+      {
+        "description": "Header 组件",
+        "filePath": "src/components/Header.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/Header.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "ProductCard 组件",
+        "filePath": "src/components/ProductCard.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/ProductCard.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "Button 组件",
+        "filePath": "src/components/Button.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/components/Button.tsx",
+          "dependsOn": []
+        }
+      }
+    ]
+  }
+}

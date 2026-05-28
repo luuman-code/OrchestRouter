@@ -1,0 +1,1715 @@
+#!/usr/bin/env node
+
+/**
+ * 编排器 API 服务器
+ *
+ * 作为 Claude Code 和 CCR Router 之间的代理层
+ * 所有请求先经过编排器，由编排器决定如何处理
+ *
+ * 工作流程：
+ * 1. 接收 Claude Code 的请求
+ * 2. 判断是否需要任务分解
+ * 3. 如果需要：分解任务 → 选择模型 → 并发执行 → 整合结果 → 返回
+ * 4. 如果不需要：转发给 CCR Router
+ */
+
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
+const path = require('path');
+const fs = require('fs');
+const ElasticDecomposer = require('../decomposer');
+const HybridTaskConverter = require('./HybridTaskConverter');
+const { ModelSelector } = require('../selector');
+const OrchestratorExecutorIntegration = require('./OrchestratorExecutorIntegration');
+const ModelHealthChecker = require('./utils/ModelHealthChecker');
+const TaskComplexityAnalyzer = require('./utils/TaskComplexityAnalyzer');
+const ConfigService = require('../../config/ConfigService');
+const { Integrator } = require('../integrator');
+const { OutputFormatter, OutputFormat } = require('../integrator/output/formatter');
+
+class OrchestratorServer {
+  constructor(config = {}) {
+    // 添加日志缓冲区 - 必须在调用其他可能产生日志的方法之前初始化
+    this.logBuffer = [];
+    this.maxLogEntries = 1000;  // 限制最大日志条数防止内存溢出
+
+    // 首先尝试从文件加载配置
+    const fileConfig = this._loadConfigFromFile();
+
+    // 合并配置：命令行/环境变量 > 文件配置 > 默认配置
+    this.config = {
+      port: config.port || fileConfig.system?.port || 3458,
+      ccrRouterUrl: config.ccrRouterUrl || fileConfig.ccrRouterUrl || 'http://127.0.0.1:3456',
+      debug: config.debug || fileConfig.system?.debug || false,
+      autoOrchestrate: config.autoOrchestrate !== false,
+      orchestrationThreshold: config.orchestrationThreshold || 0.7,
+      maxConcurrency: config.maxConcurrency || fileConfig.system?.maxConcurrency || 5,
+      timeout: config.timeout || 300000,
+      // 完整配置对象（用于 UI 配置管理）
+      system: { ...fileConfig.system, ...config.system },
+      Providers: fileConfig.Providers || [],
+      selector: fileConfig.selector || {},
+      costControl: fileConfig.costControl || {},
+      executor: fileConfig.executor || {}
+    };
+
+    this.server = null;
+    this.decomposer = null;
+    this.hybridConverter = null;
+    this.modelSelector = null;
+    this.executorIntegration = null;
+    this.integrator = null;
+    this.complexityAnalyzer = null;
+    this.configService = new ConfigService(); // 初始化配置服务
+    this.outputFormatter = new OutputFormatter(); // 初始化输出格式化器
+
+    // 初始化整合器配置
+    this.integratorConfig = {
+      debug: this.config.debug,
+      cache: {
+        enabled: this.config.integrator?.cache?.enabled ?? true,
+        persistenceEnabled: this.config.integrator?.cache?.persistenceEnabled ?? true
+      },
+      runtimeDependencies: {
+        enabled: this.config.integrator?.runtimeDependencies?.enabled ?? true,
+        outputReport: this.config.integrator?.runtimeDependencies?.outputReport ?? true
+      },
+      formatting: this.config.integrator?.formatting || {},
+      execution: this.config.integrator?.execution || {},
+      conflict: this.config.integrator?.conflict || {},
+      dependency: this.config.integrator?.dependency || {},
+      plugins: this.config.integrator?.plugins || {},
+      logger: console
+    };
+
+    this._log('编排器服务器初始化完成');
+    if (Object.keys(fileConfig).length > 0) {
+      this._log('已从配置文件加载配置');
+    }
+    if (this.config.integrator) {
+      this._log('整合器配置已加载');
+    }
+  }
+
+  /**
+   * 从文件加载配置
+   */
+  _loadConfigFromFile() {
+    const fs = require('fs');
+    const path = require('path');
+
+    const possiblePaths = [
+      path.join(__dirname, '../../config/config.json'),
+      path.join(__dirname, '../../config/unified-config.json'),
+      path.join(process.cwd(), 'config/config.json')
+    ];
+
+    for (const configPath of possiblePaths) {
+      try {
+        if (fs.existsSync(configPath)) {
+          const content = fs.readFileSync(configPath, 'utf8');
+          const config = JSON.parse(content);
+          if (config.Providers && Array.isArray(config.Providers)) {
+            this._log(`已从 ${configPath} 加载配置`);
+            return config;
+          }
+        }
+      } catch (error) {
+        this._log(`读取配置文件失败 ${configPath}: ${error.message}`, 'warn');
+      }
+    }
+
+    return {};
+  }
+
+  /**
+   * 日志方法 - 同时输出到控制台和缓冲区
+   */
+  _log(message, level = 'info', module = 'Orchestrator') {
+    const timestamp = new Date().toISOString();
+    const logEntry = { timestamp, level, message, module };
+
+    // 输出到控制台（保持原有行为）
+    console.log(`[${timestamp}] [${module}] [${level}] ${message}`);
+
+    // 添加到内存缓冲区
+    this._addToLogBuffer(logEntry);
+  }
+
+  /**
+   * 添加日志到缓冲区（带容量控制）
+   */
+  _addToLogBuffer(logEntry) {
+    this.logBuffer.push(logEntry);
+
+    // 如果超过最大容量，移除最旧的日志
+    if (this.logBuffer.length > this.maxLogEntries) {
+      this.logBuffer = this.logBuffer.slice(-this.maxLogEntries);
+    }
+  }
+
+  /**
+   * 更新配置
+   */
+  _updateConfig(newConfig) {
+    const fs = require('fs');
+    const path = require('path');
+
+    // 使用 ConfigService 统一保存配置，确保两个配置源同步
+    const success = this.configService.saveConfig(newConfig);
+
+    if (success) {
+      // 同步更新 OrchestratorServer 的配置为 ConfigService 的配置
+      this.config = this.configService.getConfig();
+      this._log('配置已更新并同步到 ConfigService');
+    } else {
+      // 回退到直接保存
+      this.config = {
+        ...this.config,
+        ...newConfig,
+        system: { ...this.config.system, ...newConfig.system },
+        selector: { ...this.config.selector, ...newConfig.selector },
+        costControl: { ...this.config.costControl, ...newConfig.costControl },
+        executor: { ...this.config.executor, ...newConfig.executor }
+      };
+
+      const configPath = path.join(__dirname, '../../config/config.json');
+      try {
+        fs.writeFileSync(configPath, JSON.stringify(this.config, null, 2), 'utf8');
+        this._log('配置已保存到文件：' + configPath);
+      } catch (error) {
+        this._log('保存配置文件失败：' + error.message, 'error');
+      }
+    }
+
+    // 如果更新了系统配置，可能需要重启服务（此处仅记录日志）
+    if (newConfig.system?.port || newConfig.system?.debug) {
+      this._log('系统配置已更新，部分更改可能需要重启服务才能生效', 'warn');
+    }
+  }
+
+  /**
+   * 判断请求是否需要任务分解
+   * 使用混合式任务复杂度分析器（规则 + LLM 语义理解）
+   */
+  async _shouldDecompose(requestBody) {
+    const userMessage = this._extractUserMessage(requestBody);
+
+    if (!userMessage || typeof userMessage !== 'string' || userMessage.trim().length === 0) {
+      return false;
+    }
+
+    // 确保复杂度分析器已初始化
+    if (!this.complexityAnalyzer) {
+      // 尝试获取 LLM 客户端
+      let llmClient = null;
+
+      // 首先尝试从 decomposer 获取
+      if (this.decomposer && this.decomposer.typeAnnotator && this.decomposer.typeAnnotator.concurrentLLMInferencer) {
+        llmClient = this.decomposer.typeAnnotator.concurrentLLMInferencer.llmClient;
+      }
+
+      // 如果没有，尝试从构造函数路径获取
+      if (!llmClient && this.decomposer) {
+        llmClient = this.decomposer.typeAnnotator?.concurrentLLMInferencer?.llmClient;
+      }
+
+      this._log(`初始化任务复杂度分析器，LLM客户端存在: ${!!llmClient}`, 'debug');
+
+      this.complexityAnalyzer = new TaskComplexityAnalyzer({
+        llmClient: llmClient,
+        config: this.config.orchestrator?.taskComplexityAnalysis
+      });
+    }
+
+    try {
+      const analysisResult = await this.complexityAnalyzer.analyze(userMessage);
+
+      this._log(`任务复杂度分析结果：isComplex=${analysisResult.isComplex}, ` +
+                `confidence=${analysisResult.confidence}, method=${analysisResult.method}`, 'debug');
+
+      return analysisResult.isComplex;
+    } catch (error) {
+      this._log(`任务复杂度分析时出错: ${error.message}`, 'error');
+
+      // 如果分析失败，回退到原来的简单规则判断
+      const separatorCount = (userMessage.match(/[，,、]/g) || []).length;
+      if (separatorCount >= 2) {
+        this._log(`回退：检测到 ${separatorCount} 个分隔符，认为是复杂任务`, 'debug');
+        return true;
+      }
+
+      return false; // 安全起见，不分解
+    }
+  }
+
+  /**
+   * 从请求体中提取用户消息
+   */
+  _extractUserMessage(requestBody) {
+    if (!requestBody) return '';
+
+    try {
+      // Anthropic API 格式
+      if (requestBody.messages && Array.isArray(requestBody.messages)) {
+        const userMessages = requestBody.messages.filter(m => m && m.role === 'user');
+        if (userMessages.length > 0) {
+          const lastUserMessage = userMessages[userMessages.length - 1];
+          if (lastUserMessage && lastUserMessage.content) {
+            if (typeof lastUserMessage.content === 'string') {
+              return lastUserMessage.content;
+            }
+            if (Array.isArray(lastUserMessage.content)) {
+              return lastUserMessage.content
+                .filter(item => item && item.type === 'text' && item.text)
+                .map(item => item.text)
+                .join(' ');
+            }
+          }
+        }
+      }
+
+      // 直接消息格式
+      if (requestBody.prompt) {
+        return String(requestBody.prompt);
+      }
+
+      if (requestBody.message) {
+        return String(requestBody.message);
+      }
+    } catch (error) {
+      this._log(`提取用户消息时出错: ${error.message}`, 'error');
+    }
+
+    return '';
+  }
+
+  /**
+   * 将自然语言任务描述转换为结构化任务
+   * 使用混合转换器（规则 + LLM）
+   */
+  async _convertToStructuredTask(description) {
+    if (this.hybridConverter) {
+      return await this.hybridConverter.convert(description);
+    }
+    // 回退到规则匹配
+    return this._convertToStructuredTaskRuleBased(description);
+  }
+
+  /**
+   * 基于规则的结构化任务转换（回退方法）
+   */
+  _convertToStructuredTaskRuleBased(description) {
+    const deliverables = [];
+    const parts = description.split(/[,;,;]|\band\b|\bor\b|\bwith\b|\b 包含\b|\b 包括\b|\b 需要\b/g);
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].trim();
+      if (!part) continue;
+
+      const typeScores = {
+        'ui': 0, 'api': 0, 'model': 0, 'style': 0,
+        'test': 0, 'config': 0, 'logic': 0, 'database': 0, 'general': 0
+      };
+
+      if (/(页面 | 界面|view|page|component|ui|frontend|前端 | 渲染 | 显示 | 布局 | 导航 | 菜单 | 表单 | 按钮 | 组件 | 仪表盘|dashboard|图表|chart)/i.test(part)) typeScores.ui++;
+      if (/(api|接口|endpoint|route|backend|后端 | 服务 | 请求|response|rest|graphql|微服务 | 网关)/i.test(part)) typeScores.api++;
+      if (/(模型|model|schema|entity|数据 | 结构 |orm|实体 | 存储 | 持久化)/i.test(part)) typeScores.model++;
+      if (/(样式|style|css|scss|design|主题|theme|颜色|font|响应式 | 动画)/i.test(part)) typeScores.style++;
+      if (/(测试|test|spec|unit|integration|e2e|自动化|mock|assert|验证)/i.test(part)) typeScores.test++;
+      if (/(配置|config|setting|环境|env|部署|deploy|参数 | 变量)/i.test(part)) typeScores.config++;
+      if (/(逻辑|logic|algorithm|function|业务 | 算法 | 计算 | 规则|rule|工作流|状态)/i.test(part)) typeScores.logic++;
+      if (/(数据库|database|migration|query|sql|index|transaction|crud|存储过程)/i.test(part)) typeScores.database++;
+
+      let maxType = 'general';
+      let maxScore = 0;
+      for (const [type, score] of Object.entries(typeScores)) {
+        if (score > maxScore) { maxScore = score; maxType = type; }
+      }
+
+      if (maxScore > 0) {
+        deliverables.push({
+          id: `deliverable-${Date.now()}-${i}`,
+          description: part,
+          type: maxType,
+          priority: 'medium',
+          ruleScore: maxScore
+        });
+      }
+    }
+
+    if (deliverables.length === 0) {
+      deliverables.push({
+        id: `deliverable-${Date.now()}`,
+        description: description,
+        type: 'general',
+        priority: 'medium'
+      });
+    }
+
+    return {
+      title: description.substring(0, 50) + (description.length > 50 ? '...' : ''),
+      description: description,
+      deliverables: deliverables,
+      source: 'rule_based'
+    };
+  }
+
+  /**
+   * 解析 HTTP 请求体
+   */
+  _parseBody(req) {
+    return new Promise((resolve, reject) => {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          resolve(body ? JSON.parse(body) : {});
+        } catch (e) {
+          reject(new Error('Invalid JSON body'));
+        }
+      });
+      req.on('error', reject);
+    });
+  }
+
+  /**
+   * 发送 JSON 响应
+   */
+  _sendJSON(res, statusCode, data) {
+    res.writeHead(statusCode, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(data));
+  }
+
+  /**
+   * 转发请求到 CCR Router
+   */
+  _forwardToCCR(requestBody, originalHeaders) {
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(this.config.ccrRouterUrl);
+        const isHttps = url.protocol === 'https:';
+        const httpModule = isHttps ? https : http;
+
+        // 确保请求体是有效的，否则使用默认值
+        let validRequestBody = requestBody;
+        if (!requestBody || typeof requestBody !== 'object') {
+          validRequestBody = {
+            messages: [{ role: 'user', content: 'Hello' }]
+          };
+          this._log('使用默认请求体，因为原请求体无效', 'warn');
+        }
+
+        // 确保消息格式正确
+        if (!validRequestBody.messages || !Array.isArray(validRequestBody.messages) || validRequestBody.messages.length === 0) {
+          validRequestBody = {
+            messages: [{ role: 'user', content: typeof requestBody === 'string' ? requestBody : 'Hello' }]
+          };
+          this._log('修正请求体的消息格式', 'warn');
+        }
+
+        // 确保每个消息都有正确的格式
+        validRequestBody.messages = validRequestBody.messages.map(msg => {
+          if (!msg.role || !msg.content) {
+            return {
+              role: msg.role || 'user',
+              content: msg.content || 'Hello'
+            };
+          }
+          return msg;
+        });
+
+        const payload = JSON.stringify(validRequestBody);
+
+        // 安全地构建headers，避免undefined值
+        const headers = {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+          'Accept': 'application/json'
+        };
+
+        // 只有当值存在时才添加到headers中
+        if (originalHeaders) {
+          const authHeader = originalHeaders.authorization || originalHeaders.Authorization;
+          if (authHeader) {
+            headers['Authorization'] = authHeader;
+          }
+
+          const apiKeyHeader = originalHeaders['x-api-key'] || originalHeaders['X-Api-Key'];
+          if (apiKeyHeader) {
+            headers['x-api-key'] = apiKeyHeader;
+          }
+        }
+
+        const options = {
+          hostname: url.hostname,
+          port: url.port || (isHttps ? 443 : 80),
+          path: '/v1/messages',  // 使用 Anthropic API 标准路径
+          method: 'POST',
+          headers: headers,
+          timeout: this.config.timeout || 300000  // 使用配置的超时时间，默认 5 分钟
+        };
+
+        this._log(`转发请求到 CCR Router: ${this.config.ccrRouterUrl}/v1/messages`);
+        this._log(`转发内容: ${payload.substring(0, 200)}...`, 'debug');
+
+        const req = httpModule.request(options, (res) => {
+          let data = '';
+          res.on('data', chunk => { data += chunk; });
+          res.on('end', () => {
+            try {
+              resolve({
+                statusCode: res.statusCode,
+                headers: res.headers,
+                body: JSON.parse(data)
+              });
+            } catch (e) {
+              resolve({
+                statusCode: res.statusCode,
+                headers: res.headers,
+                body: data
+              });
+            }
+          });
+        });
+
+        req.on('error', (err) => {
+          this._log(`CCR Router 连接错误: ${err.message}`, 'error');
+          reject(err);
+        });
+
+        req.on('timeout', () => {
+          this._log('CCR Router 请求超时', 'error');
+          req.destroy();
+          reject(new Error('CCR Router timeout'));
+        });
+
+        req.write(payload);
+        req.end();
+      } catch (error) {
+        this._log(`转发到 CCR Router 时出错: ${error.message}`, 'error');
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * 执行任务分解
+   */
+  async _decomposeTask(requestBody) {
+    this._log('开始任务分解流程');
+
+    // 初始化分解器和混合转换器
+    if (!this.decomposer) {
+      this.decomposer = new ElasticDecomposer({
+        debug: this.config.debug,
+        logLevel: this.config.debug ? 'debug' : 'info'
+      });
+
+      // 初始化混合转换器
+      const llmClient = this.decomposer.typeAnnotator?.concurrentLLMInferencer?.llmClient;
+      this.hybridConverter = new HybridTaskConverter({
+        llmClient: llmClient,
+        logLevel: this.config.debug ? 'debug' : 'warn'
+      });
+    }
+
+    // 初始化模型选择器（如果尚未初始化）
+    if (!this.modelSelector) {
+      this.modelSelector = new ModelSelector({
+        debug: this.config.debug
+      });
+      this._log('模型选择器已初始化');
+    }
+
+    const userMessage = this._extractUserMessage(requestBody);
+    this._log(`从 Claude Code 接收的任务描述：${userMessage.substring(0, 100)}...`, 'debug');
+
+    // 使用混合转换器进行结构化转换
+    let task;
+    try {
+      // 首先尝试解析为结构化任务
+      const parsedTask = this.decomposer.taskParser.parse(userMessage);
+
+      // 如果解析出的 deliverables 为空，则使用混合转换器
+      if (!parsedTask.deliverables || parsedTask.deliverables.length === 0) {
+        this._log('解析出的交付物为空，使用混合转换器进行结构化', 'debug');
+        const structuredResult = await this._convertToStructuredTask(userMessage);
+        task = {
+          title: structuredResult.title,
+          description: userMessage,
+          deliverables: structuredResult.deliverables,
+          source: structuredResult.source,
+          confidence: structuredResult.confidence
+        };
+      } else {
+        this._log(`从结构化解析获得 ${parsedTask.deliverables.length} 个交付物`, 'debug');
+        task = parsedTask;
+      }
+    } catch (parseError) {
+      this._log(`结构化解析失败：${parseError.message}，使用混合转换器`, 'debug');
+      const structuredResult = await this._convertToStructuredTask(userMessage);
+      task = {
+        title: structuredResult.title,
+        description: userMessage,
+        deliverables: structuredResult.deliverables,
+        source: structuredResult.source,
+        confidence: structuredResult.confidence
+      };
+    }
+
+    this._log(`向分解器传递任务：${task.title}`);
+    this._log(`任务包含 ${task.deliverables?.length || 0} 个交付物 (来源：${task.source})`, 'debug');
+
+    const decomposeResult = await this.decomposer.decompose(task);
+
+    // 安全检查分解结果
+    const subtasks = decomposeResult.subtasks || [];
+    const subtaskCount = subtasks.length || 0;
+
+    this._log(`任务分解完成，生成 ${subtaskCount} 个子任务`);
+
+    return {
+      orchestrated: true,
+      decomposition: decomposeResult,
+      subtasks: subtasks,
+      metadata: {
+        processingTime: decomposeResult.metadata?.processingTime,
+        subtaskCount: subtaskCount
+      }
+    };
+  }
+
+  /**
+   * 为子任务列表选择合适的模型
+   */
+  async _selectModelsForSubtasks(subtasks) {
+    if (!this.modelSelector) {
+      // 如果模型选择器未初始化，则初始化它
+      this.modelSelector = new ModelSelector({
+        debug: this.config.debug
+      });
+      this._log('模型选择器已初始化');
+    }
+
+    // 安全检查 subtasks 参数
+    const tasks = subtasks || [];
+    const taskCount = tasks.length || 0;
+
+    this._log(`开始为 ${taskCount} 个子任务选择模型`);
+
+    // 为每个子任务选择模型
+    const subtasksWithModels = await Promise.all(subtasks.map(async (subtask) => {
+      try {
+        // 使用模型选择器为子任务选择模型
+        const selectionResult = this.modelSelector.select(subtask);
+
+        // 将选择结果合并到子任务中
+        return {
+          ...subtask,
+          selected_model: selectionResult.selected_model,
+          selection_reason: selectionResult.reason,
+          estimated_cost: selectionResult.estimated_cost,
+          estimated_tokens: selectionResult.estimated_tokens,
+          selection_metadata: {
+            alternatives: selectionResult.alternatives,
+            cost_breakdown: selectionResult.cost_breakdown,
+            timestamp: selectionResult.timestamp
+          }
+        };
+      } catch (error) {
+        this._log(`为子任务 ${subtask.id} 选择模型时出错: ${error.message}`, 'error');
+
+        // 如果选择模型失败，使用默认模型
+        return {
+          ...subtask,
+          selected_model: 'gpt-4o-mini', // 默认模型
+          selection_reason: `模型选择失败，使用默认模型: ${error.message}`,
+          estimated_cost: 0.03, // 默认估计成本
+          selection_metadata: {
+            alternatives: ['gpt-4o-mini'],
+            fallback_used: true
+          }
+        };
+      }
+    }));
+
+    this._log(`完成 ${subtasks.length} 个子任务的模型选择`);
+    return subtasksWithModels;
+  }
+
+  /**
+   * 执行任务编排（分解 + 模型选择 + 执行 + 整合）
+   */
+  async _orchestrate(requestBody) {
+    this._log('开始任务编排流程');
+
+    // 1. 使用分解器分解任务
+    const decomposition = await this._decomposeTask(requestBody);
+
+    // 2. 安全检查分解结果并为子任务选择合适的模型
+    const subtasks = decomposition.subtasks || [];
+    const subtaskCount = subtasks.length || 0;
+
+    if (subtaskCount === 0) {
+      this._log('任务分解未生成任何子任务，跳过模型选择和执行');
+      return {
+        orchestrated: true,
+        decomposition: decomposition,
+        subtasks: [],
+        execution_results: [],
+        integration_result: null,
+        message: '任务分解未生成子任务'
+      };
+    }
+
+    const subtasksWithModels = await this._selectModelsForSubtasks(subtasks);
+
+    // 3. 初始化执行器集成模块
+    if (!this.executorIntegration) {
+      this.executorIntegration = new OrchestratorExecutorIntegration({
+        debug: this.config.debug,
+        modelRegistry: this.modelSelector?.modelRegistry // 如果模型选择器有注册表
+      });
+
+      this._log('执行器集成模块已初始化');
+    }
+
+    // 4. 执行子任务（并发执行）
+    this._log(`开始执行 ${subtasksWithModels.length} 个子任务`);
+    const executionResult = await this.executorIntegration.executeSubtasks(subtasksWithModels);
+
+    // 5. 初始化整合器（如果尚未初始化）
+    if (!this.integrator) {
+      this.integrator = new Integrator(this.integratorConfig);
+      this._log('整合器已初始化');
+    }
+
+    // 6. 使用整合器整合执行结果
+    let integrationResult = null;
+    const executionResults = executionResult.execution_results || executionResult.results || [];
+
+    if (executionResults.length > 0) {
+      this._log(`开始整合 ${executionResults.length} 个执行结果`);
+      try {
+        integrationResult = await this.integrator.integrate(executionResults, subtasksWithModels);
+
+        if (integrationResult.success) {
+          this._log(`整合成功：生成 ${integrationResult.files?.size || 0} 个文件`);
+        } else {
+          this._log(`整合完成但存在警告：${integrationResult.warnings?.join(', ') || '未知警告'}`, 'warn');
+        }
+      } catch (integrationError) {
+        this._log(`整合失败：${integrationError.message}`, 'error');
+        integrationResult = {
+          success: false,
+          files: new Map(),
+          logs: [],
+          warnings: [`整合器异常：${integrationError.message}`],
+          error: integrationError.message
+        };
+      }
+    } else {
+      this._log('没有执行结果需要整合', 'warn');
+    }
+
+    // 7. 整合所有结果
+    const result = {
+      ...decomposition,
+      subtasks: subtasksWithModels,
+      modelSelections: subtasksWithModels.map(st => ({
+        taskId: st.id,
+        selectedModel: st.selected_model,
+        reason: st.selection_reason,
+        estimatedCost: st.estimated_cost
+      })),
+      execution_results: executionResult,
+      integration_result: integrationResult,
+      metadata: {
+        ...decomposition.metadata,
+        modelSelectionCompleted: true,
+        executionCompleted: true,
+        integrationCompleted: integrationResult !== null,
+        selectedModels: [...new Set(subtasksWithModels.map(st => st.selected_model))],
+        execution_summary: executionResult.execution_summary,
+        integration_summary: integrationResult ? {
+          filesCount: integrationResult.files?.size || 0,
+          warningsCount: integrationResult.warnings?.length || 0,
+          success: integrationResult.success
+        } : null
+      }
+    };
+
+    this._log(`为 ${subtasksWithModels.length} 个子任务选择了模型并完成执行与整合`);
+    return result;
+  }
+
+  /**
+   * 处理 HTTP 请求
+   */
+  async _handleRequest(req, res) {
+    // 使用实际监听的端口或默认端口，避免 undefined 导致 URL 解析失败
+    const listenPort = this.config?.port || this._serverPort || 3458;
+    const url = new URL(req.url, `http://localhost:${listenPort}`);
+    const pathname = url.pathname;
+
+    // 设置 CORS 头 - 必须在任何响应之前设置
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-ID');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 小时预检缓存
+
+    // CORS 预检请求
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    try {
+      // 健康检查端点
+      if (pathname === '/health' && req.method === 'GET') {
+        return this._sendJSON(res, 200, {
+          status: 'ok',
+          service: 'orchestrator',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // 配置管理端点
+      if (pathname === '/config') {
+        if (req.method === 'GET') {
+          // 返回 ConfigService 的配置（确保与 /api/config/* 端点一致）
+          return this._sendJSON(res, 200, this.configService.getConfig());
+        }
+        if (req.method === 'POST') {
+          // 保存新配置
+          const newConfig = await this._parseBody(req);
+          this._updateConfig(newConfig);
+          return this._sendJSON(res, 200, { success: true, message: '配置已保存' });
+        }
+      }
+
+      // 选择规则配置端点
+      if (pathname.startsWith('/api/config/selection-rules')) {
+        if (req.method === 'GET') {
+          // 获取所有选择规则
+          const rules = this.configService.getSelectionRules();
+          return this._sendJSON(res, 200, rules);
+        }
+        if (req.method === 'POST') {
+          // 添加新规则
+          const rule = await this._parseBody(req);
+          const success = this.configService.addRule(rule);
+          return this._sendJSON(res, success ? 200 : 400, {
+            success,
+            message: success ? '规则已添加' : '添加规则失败'
+          });
+        }
+
+        // 处理带任务类型的路径（PUT/DELETE）
+        const taskTypeMatch = pathname.match(/\/api\/config\/selection-rules\/(.+)/);
+        if (taskTypeMatch) {
+          const taskType = decodeURIComponent(taskTypeMatch[1]);
+
+          if (req.method === 'PUT') {
+            // 更新规则
+            const rule = await this._parseBody(req);
+            const success = this.configService.updateRule(taskType, rule);
+            return this._sendJSON(res, success ? 200 : 404, {
+              success,
+              message: success ? '规则已更新' : '找不到规则'
+            });
+          }
+
+          if (req.method === 'DELETE') {
+            // 删除规则
+            const success = this.configService.removeRule(taskType);
+            return this._sendJSON(res, success ? 200 : 404, {
+              success,
+              message: success ? '规则已删除' : '找不到规则'
+            });
+          }
+        }
+      }
+
+      // 模型配置端点
+      if (pathname.startsWith('/api/config/models')) {
+        if (req.method === 'GET') {
+          // 获取所有模型
+          const models = this.configService.getModels();
+          return this._sendJSON(res, 200, models);
+        }
+        if (req.method === 'POST') {
+          // 添加新模型
+          const model = await this._parseBody(req);
+          const success = this.configService.addModel(model);
+          return this._sendJSON(res, success ? 200 : 400, {
+            success,
+            message: success ? '模型已添加' : '添加模型失败'
+          });
+        }
+
+        // 处理带模型ID的路径（PUT/DELETE）
+        const modelIdMatch = pathname.match(/\/api\/config\/models\/(.+)/);
+        if (modelIdMatch) {
+          const modelId = decodeURIComponent(modelIdMatch[1]);
+
+          if (req.method === 'PUT') {
+            // 更新模型
+            const model = await this._parseBody(req);
+            const success = this.configService.updateModel(modelId, model);
+            return this._sendJSON(res, success ? 200 : 404, {
+              success,
+              message: success ? '模型已更新' : '找不到模型'
+            });
+          }
+
+          if (req.method === 'DELETE') {
+            // 删除模型
+            const success = this.configService.removeModel(modelId);
+            return this._sendJSON(res, success ? 200 : 404, {
+              success,
+              message: success ? '模型已删除' : '找不到模型'
+            });
+          }
+        }
+      }
+
+      // 重置配置端点
+      if (pathname === '/api/config/reset' && req.method === 'POST') {
+        const success = this.configService.resetToDefaults();
+        return this._sendJSON(res, success ? 200 : 500, {
+          success,
+          message: success ? '配置已重置为默认值' : '重置失败'
+        });
+      }
+
+      // 保存配置端点
+      if (pathname === '/api/config/save' && req.method === 'POST') {
+        const newConfig = await this._parseBody(req);
+        const success = this.configService.saveConfig(newConfig);
+        return this._sendJSON(res, success ? 200 : 500, {
+          success,
+          message: success ? '配置已保存' : '保存失败'
+        });
+      }
+
+      // 编排端点 - 接收 Claude Code 的请求
+      if (pathname === '/v1/orchestrate' || pathname === '/orchestrate') {
+        if (req.method !== 'POST') {
+          return this._sendJSON(res, 405, { error: 'Method not allowed' });
+        }
+
+        const requestBody = await this._parseBody(req);
+        this._log(`收到 Claude Code 请求，消息长度：${JSON.stringify(requestBody).length}`);
+
+        // 判断是否需要任务分解
+        if (this.config.autoOrchestrate && await this._shouldDecompose(requestBody)) {
+          this._log('检测到复杂任务，启动编排流程');
+
+          try {
+            // 执行编排（包含分解器调用）
+            const orchestrateResult = await this._orchestrate(requestBody);
+
+            // 格式化编排结果
+            let formattedResult = this._formatOrchestrationResult(orchestrateResult, requestBody);
+
+            // 检查是否需要流式响应（通过查询参数或请求体指定）
+            const urlObj = new URL(req.url, `http://localhost:${this.config.port}`);
+            const streamEnabled = urlObj.searchParams.get('stream') === 'true' || requestBody.stream === true;
+            const files = formattedResult.files || new Map();
+
+            if (streamEnabled && files.size > 5) {
+              this._log(`启用流式响应，文件数量：${files.size}`, 'debug');
+              await this._streamResponse(formattedResult, res);
+              return;
+            }
+
+            // 应用 Token 限制处理
+            const maxTokens = this.config.tokenLimit || 8000;
+            formattedResult = this._handleTokenLimit(formattedResult, maxTokens);
+
+            // 使用 OutputFormatter 格式化输出
+            const outputFormat = requestBody.outputFormat || 'json';
+            const finalOutput = this._formatResponseForClaudeCode(orchestrateResult, requestBody, outputFormat);
+
+            return this._sendJSON(res, 200, finalOutput);
+
+          } catch (error) {
+            this._log(`编排流程失败：${error.message}`, 'error');
+            return this._sendJSON(res, 500, {
+              error: '编排流程失败',
+              message: error.message,
+              stack: this.config.debug ? error.stack : undefined
+            });
+          }
+        } else {
+          this._log('普通任务，转发给 CCR Router');
+
+          // 转发给 CCR Router
+          const ccrResult = await this._forwardToCCR(requestBody, req.headers);
+
+          return this._sendJSON(res, ccrResult.statusCode, ccrResult.body);
+        }
+      }
+
+      // 分解端点 - 直接调用分解器（测试用）
+      if (pathname === '/v1/decompose' && req.method === 'POST') {
+        const requestBody = await this._parseBody(req);
+
+        if (!this.decomposer) {
+          this.decomposer = new ElasticDecomposer({
+            debug: this.config.debug,
+            logLevel: this.config.debug ? 'debug' : 'info'
+          });
+        }
+
+        const userMessage = this._extractUserMessage(requestBody);
+        const task = requestBody.task || {
+          title: '分解测试任务',
+          description: userMessage
+        };
+
+        this._log(`直接调用分解器，任务内容：${task.title}`);
+
+        const result = await this.decomposer.decompose(task);
+        return this._sendJSON(res, 200, result);
+      }
+
+      // 模型选择端点 - 直接调用模型选择器（测试用）
+      if (pathname === '/v1/select-model' && req.method === 'POST') {
+        const requestBody = await this._parseBody(req);
+
+        if (!this.modelSelector) {
+          this.modelSelector = new ModelSelector({
+            debug: this.config.debug
+          });
+        }
+
+        const subtask = requestBody.subtask || {
+          id: 'direct-test-' + Date.now(),
+          type: 'general',
+          description: this._extractUserMessage(requestBody) || '直接测试任务'
+        };
+
+        this._log(`直接调用模型选择器，子任务：${subtask.description.substring(0, 50)}...`);
+
+        try {
+          const result = this.modelSelector.select(subtask);
+          return this._sendJSON(res, 200, result);
+        } catch (error) {
+          this._log(`模型选择失败: ${error.message}`, 'error');
+          return this._sendJSON(res, 500, {
+            error: '模型选择失败',
+            message: error.message
+          });
+        }
+      }
+
+      // 获取模型选择器状态
+      if (pathname === '/v1/model-selector-status' && req.method === 'GET') {
+        if (!this.modelSelector) {
+          return this._sendJSON(res, 200, {
+            initialized: false,
+            availableModels: [],
+            budgetStatus: null
+          });
+        }
+
+        return this._sendJSON(res, 200, {
+          initialized: true,
+          availableModels: this.modelSelector.getAvailableModels().map(m => m.id),
+          budgetStatus: this.modelSelector.getBudgetStatus(),
+          learningReport: this.modelSelector.getLearningReport(),
+          modelStatuses: this.modelSelector.getStatusReport()
+        });
+      }
+
+      // 模型健康状态端点 - 显示启动时的健康检查结果
+      if (pathname === '/v1/model-health-status' && req.method === 'GET') {
+        return this._sendJSON(res, 200, {
+          healthCheckPerformed: !!this.healthResults,
+          healthResults: this.healthResults || null,
+          timestamp: this.healthResults?.timestamp || new Date().toISOString()
+        });
+      }
+
+      // 执行器集成状态
+      if (pathname === '/v1/executor-integration-status' && req.method === 'GET') {
+        return this._sendJSON(res, 200, {
+          initialized: !!this.executorIntegration,
+          executorReady: !!(this.executorIntegration && this.executorIntegration.executor),
+          modelRegistryConnected: !!(this.modelSelector && this.executorIntegration),
+          availableEndpoints: [
+            'POST /v1/orchestrate',
+            'POST /v1/decompose',
+            'POST /v1/select-model',
+            'POST /v1/execute-subtasks',
+            'GET /v1/model-selector-status',
+            'GET /v1/executor-integration-status',
+            'GET /v1/integrator-status'
+          ]
+        });
+      }
+
+      // 整合器状态
+      if (pathname === '/v1/integrator-status' && req.method === 'GET') {
+        return this._sendJSON(res, 200, {
+          initialized: !!this.integrator,
+          integratorReady: !!(this.integrator),
+          config: this.integratorConfig,
+          cacheStats: this.integrator?.cacheManager?.getStats() || null,
+          availableEndpoints: [
+            'POST /v1/orchestrate',
+            'POST /v1/integrate',
+            'GET /v1/integrator-status'
+          ]
+        });
+      }
+
+      // 直接调用整合器（测试用）
+      if (pathname === '/v1/integrate' && req.method === 'POST') {
+        if (!this.integrator) {
+          this.integrator = new Integrator(this.integratorConfig);
+        }
+
+        const requestBody = await this._parseBody(req);
+
+        try {
+          const executionResults = requestBody.executionResults || requestBody.results || [];
+          const subtasks = requestBody.subtasks || [];
+
+          if (executionResults.length === 0) {
+            return this._sendJSON(res, 400, {
+              error: '缺少执行结果',
+              message: '请提供 executionResults 或 results 数组'
+            });
+          }
+
+          this._log(`直接调用整合器，整合 ${executionResults.length} 个结果`);
+          const result = await this.integrator.integrate(executionResults, subtasks);
+
+          return this._sendJSON(res, 200, {
+            success: result.success,
+            filesCount: result.files?.size || 0,
+            warnings: result.warnings || [],
+            logs: this.config.debug ? result.logs : undefined,
+            qualityReport: this.config.debug ? result.qualityReport : undefined,
+            validationReport: result.validationReport,
+            cacheStats: result.cacheStats
+          });
+        } catch (error) {
+          this._log(`直接整合失败：${error.message}`, 'error');
+          return this._sendJSON(res, 500, {
+            error: '整合失败',
+            message: error.message
+          });
+        }
+      }
+
+      // 直接执行子任务（测试用）
+      if (pathname === '/v1/execute-subtasks' && req.method === 'POST') {
+        if (!this.executorIntegration) {
+          this.executorIntegration = new OrchestratorExecutorIntegration({
+            debug: this.config.debug,
+            modelRegistry: this.modelSelector?.modelRegistry
+          });
+        }
+
+        const requestBody = await this._parseBody(req);
+
+        try {
+          // 修复：支持 subtasksWithModels 和 subtasks 两种格式
+          let subtasksWithModels;
+
+          if (requestBody.subtasksWithModels && Array.isArray(requestBody.subtasksWithModels)) {
+            // 新格式：直接使用 subtasksWithModels
+            subtasksWithModels = requestBody.subtasksWithModels;
+          } else if (requestBody.subtasks && Array.isArray(requestBody.subtasks)) {
+            // 旧格式：从 subtasks 构建
+            subtasksWithModels = requestBody.subtasks.map(subtask => ({
+              id: subtask.id || 'subtask-' + Date.now(),
+              description: subtask.description || subtask.task || '执行任务',
+              type: subtask.type || 'general',
+              selected_model: subtask.selected_model || requestBody.model || 'gpt-4o-mini',
+              estimated_cost: subtask.estimated_cost || 0.03,
+              selection_metadata: subtask.selection_metadata || {},
+              useFallback: subtask.useFallback !== undefined ? subtask.useFallback : false
+            }));
+          } else {
+            // 默认格式：创建单个任务
+            subtasksWithModels = [{
+              id: 'direct-exec-' + Date.now(),
+              description: this._extractUserMessage(requestBody) || '直接执行测试任务',
+              type: requestBody.type || 'general',
+              selected_model: requestBody.selected_model || requestBody.model || 'gpt-4o-mini',
+              estimated_cost: requestBody.estimated_cost || 0.03,
+              selection_metadata: requestBody.selection_metadata || {},
+              useFallback: requestBody.useFallback !== undefined ? requestBody.useFallback : false
+            }];
+          }
+
+          this._log(`直接执行 ${subtasksWithModels.length} 个子任务`);
+
+          const result = await this.executorIntegration.executeSubtasks(subtasksWithModels);
+          return this._sendJSON(res, 200, result);
+        } catch (error) {
+          this._log(`直接执行子任务失败: ${error.message}`, 'error');
+          return this._sendJSON(res, 500, {
+            error: '子任务执行失败',
+            message: error.message
+          });
+        }
+      }
+
+      // 日志端点
+      if (pathname === '/v1/logs' && req.method === 'GET') {
+        const urlParams = new URLSearchParams(url.search);
+        const level = urlParams.get('level') || null;
+        const limit = parseInt(urlParams.get('limit')) || 100;
+        const since = urlParams.get('since') || null;
+
+        // 过滤日志
+        let filteredLogs = this.logBuffer;
+
+        if (level) {
+          filteredLogs = filteredLogs.filter(log => log.level === level);
+        }
+
+        if (since) {
+          filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) > new Date(since));
+        }
+
+        // 限制返回数量
+        const resultLogs = filteredLogs.slice(-Math.min(limit, filteredLogs.length));
+
+        return this._sendJSON(res, 200, {
+          logs: resultLogs,
+          total: filteredLogs.length,
+          retrieved: resultLogs.length
+        });
+      }
+
+      // 日志清理端点
+      if (pathname === '/v1/logs/clear' && req.method === 'POST') {
+        this.logBuffer = [];
+        return this._sendJSON(res, 200, { message: '日志已清除' });
+      }
+
+      // 404
+      this._sendJSON(res, 404, {
+        error: 'Not Found',
+        available_endpoints: {
+          'GET /health': '健康检查',
+          'POST /orchestrate': '编排端点（主端点）',
+          'POST /v1/orchestrate': '编排端点（兼容路径）',
+          'POST /v1/decompose': '直接分解测试',
+          'POST /v1/select-model': '直接模型选择测试',
+          'GET /v1/model-selector-status': '模型选择器状态',
+          'GET /v1/logs': '获取实时日志',
+          'POST /v1/logs/clear': '清除日志缓冲区'
+        }
+      });
+
+    } catch (error) {
+      this._log(`请求处理错误：${error.message}`, 'error');
+      this._sendJSON(res, 500, {
+        error: error.message,
+        stack: this.config.debug ? error.stack : undefined
+      });
+    }
+  }
+
+  /**
+   * 启动服务器
+   */
+  async start() {
+    // 1. 初始化模型选择器（传入 Providers 配置以加载 API 密钥）
+    if (!this.modelSelector) {
+      this.modelSelector = new ModelSelector({
+        debug: this.config.debug,
+        models: this.config.Providers || []  // 传入 Providers 配置
+      });
+      this._log('模型选择器已初始化');
+    }
+
+    // 2. 初始化分解器
+    if (!this.decomposer) {
+      this.decomposer = new ElasticDecomposer({
+        debug: this.config.debug,
+        logLevel: this.config.debug ? 'debug' : 'info'
+      });
+
+      // 初始化混合转换器
+      const llmClient = this.decomposer.typeAnnotator?.concurrentLLMInferencer?.llmClient;
+      this.hybridConverter = new HybridTaskConverter({
+        llmClient: llmClient,
+        logLevel: this.config.debug ? 'debug' : 'warn'
+      });
+    }
+
+    // 3. 初始化执行器
+    if (!this.executorIntegration) {
+      this.executorIntegration = new OrchestratorExecutorIntegration({
+        debug: this.config.debug,
+        maxConcurrency: this.config.maxConcurrency,
+        timeout: this.config.timeout
+      });
+    }
+
+    // 4. 初始化任务复杂度分析器
+    if (!this.complexityAnalyzer) {
+      // 确保分解器已初始化，这样我们可以获取LLM客户端
+      if (!this.decomposer) {
+        this.decomposer = new ElasticDecomposer({
+          debug: this.config.debug,
+          logLevel: this.config.debug ? 'debug' : 'info'
+        });
+
+        // 初始化混合转换器
+        const llmClient = this.decomposer.typeAnnotator?.concurrentLLMInferencer?.llmClient;
+        this.hybridConverter = new HybridTaskConverter({
+          llmClient: llmClient,
+          logLevel: this.config.debug ? 'debug' : 'warn'
+        });
+      }
+
+      // 获取 LLM 客户端，如果获取不到就创建一个新的
+      let llmClient = this.decomposer?.typeAnnotator?.concurrentLLMInferencer?.llmClient;
+
+      if (!llmClient) {
+        // 如果分解器中的LLM客户端不可用，创建一个新的
+        try {
+          const LLMClient = require('./decomposer/llm/LLMClient');
+          llmClient = new LLMClient({
+            baseURL: this.config.orchestrator?.decomposer?.llm?.base_url || 'http://localhost:11434',
+            model: this.config.orchestrator?.decomposer?.llm?.model || 'qwen2.5:3b',
+            timeout: this.config.orchestrator?.decomposer?.llm?.timeout || 30000
+          });
+          this._log('为复杂度分析器创建了新的LLM客户端', 'debug');
+        } catch (error) {
+          this._log(`无法创建LLM客户端: ${error.message}`, 'warn');
+          llmClient = null; // 仍然创建分析器，但不使用LLM功能
+        }
+      }
+
+      this.complexityAnalyzer = new TaskComplexityAnalyzer({
+        llmClient: llmClient,
+        config: this.config.orchestrator?.taskComplexityAnalysis
+      });
+      this._log('任务复杂度分析器已初始化');
+    }
+
+    // 5. 初始化整合器
+    if (!this.integrator) {
+      this.integrator = new Integrator(this.integratorConfig);
+      this._log('整合器已初始化');
+    }
+
+    // 6. 执行模型健康检查（启动时检查 API 密钥和端点）
+    this._log('正在执行模型健康检查...');
+    const healthChecker = new ModelHealthChecker(this.modelSelector);
+    const healthResults = await healthChecker.checkAllModels();
+
+    this._log(`模型健康检查完成：${healthResults.availableModels}/${healthResults.totalModels} 可用`);
+
+    // 显示本地 Ollama 模型状态
+    if (healthResults.localModels?.ollama) {
+      const ollamaStatus = healthResults.localModels.ollama;
+      if (ollamaStatus.available) {
+        this._log(`本地 Ollama 模型：✅ 可用 (${ollamaStatus.models.length} 个模型)`);
+        for (const model of ollamaStatus.models) {
+          this._log(`  - ${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)} GB)`, 'info', 'Ollama');
+        }
+      } else {
+        this._log(`本地 Ollama 模型：❌ 不可用 - ${ollamaStatus.reason}`, 'warn');
+      }
+    }
+
+    // 5. 启动 HTTP 服务器
+    return new Promise((resolve, reject) => {
+      this.server = http.createServer((req, res) => {
+        this._handleRequest(req, res);
+      });
+
+      this.server.listen(this.config.port, '0.0.0.0', () => {
+        // 保存实际监听的端口
+        const address = this.server.address();
+        this._serverPort = address?.port || this.config.port;
+
+        this._log(`==========================================`);
+        this._log(`  编排器服务器已启动`);
+        this._log(`  监听端口：http://0.0.0.0:${this.config.port}`);
+        this._log(``);
+        this._log(`  模型状态:`);
+        this._log(`    可用模型：${healthResults.availableModels}/${healthResults.totalModels}`);
+        this._log(`    不可用模型：${healthResults.unavailableModels}`);
+        this._log(``);
+        this._log(`  可用端点:`);
+        this._log(`    GET  /health                           - 健康检查`);
+        this._log(`    POST /orchestrate                      - 编排端点（主端点）`);
+        this._log(`    POST /v1/orchestrate                  - 编排端点（兼容路径）`);
+        this._log(`    POST /v1/decompose                    - 直接分解测试`);
+        this._log(`    POST /v1/select-model                 - 直接模型选择测试`);
+        this._log(`    POST /v1/execute-subtasks             - 直接执行子任务`);
+        this._log(`    GET  /v1/model-selector-status       - 模型选择器状态`);
+        this._log(`    GET  /v1/executor-integration-status - 执行器集成状态`);
+        this._log(`    GET  /v1/integrator-status           - 整合器状态（新增）`);
+        this._log(`    GET  /v1/model-health-status         - 模型健康状态`);
+        this._log(`    GET  /v1/logs                          - 获取实时日志`);
+        this._log(`    POST /v1/logs/clear                  - 清除日志缓冲区`);
+        this._log(``);
+        this._log(`  CCR Router 地址：${this.config.ccrRouterUrl}`);
+        this._log(`  调试模式：${this.config.debug ? '开启' : '关闭'}`);
+        this._log(`  自动编排：${this.config.autoOrchestrate ? '开启' : '关闭'}`);
+        this._log(`  混合转换：启用（规则+LLM）`);
+        this._log(`  模型选择：已集成（为分解任务选择合适模型）`);
+        this._log(`==========================================`);
+
+        // 存储健康检查结果供后续使用
+        this.healthResults = healthResults;
+
+        resolve();
+      });
+
+      this.server.on('error', reject);
+    });
+  }
+
+  /**
+   * 格式化编排结果为整合器兼容格式
+   *
+   * @param {Object} orchestrateResult - 编排结果
+   * @param {Object} requestBody - 请求体
+   * @returns {Object} 格式化后的结果
+   */
+  _formatOrchestrationResult(orchestrateResult, requestBody) {
+    // execution_results 可能是整个执行结果对象，也可能是直接的数组
+    const executionResults = orchestrateResult.execution_results?.execution_results ||
+                             orchestrateResult.execution_results?.results ||
+                             orchestrateResult.execution_results || [];
+    const subtasks = orchestrateResult.subtasks || [];
+    const integrationResult = orchestrateResult.integration_result;
+
+    // 如果整合器已经返回了 files，直接使用
+    if (integrationResult?.files && integrationResult.files instanceof Map) {
+      const files = integrationResult.files;
+
+      const result = {
+        success: integrationResult.success,
+        files,
+        logs: integrationResult.logs || [],
+        warnings: integrationResult.warnings || [],
+        qualityReport: integrationResult.qualityReport,
+        validationReport: integrationResult.validationReport,
+        orchestrationMetadata: {
+          modelSelections: orchestrateResult.modelSelections,
+          decomposition: orchestrateResult.decomposition,
+          executionSummary: orchestrateResult.execution_results?.execution_summary,
+          selectedModels: orchestrateResult.metadata?.selectedModels || []
+        },
+        integrationMetadata: {
+          cacheStats: integrationResult.cacheStats,
+          plugins: integrationResult.plugins,
+          dependencyReport: integrationResult.dependencyReport
+        }
+      };
+
+      return result;
+    }
+
+    // 回退：如果没有整合器结果，手动构建 files Map
+    const files = new Map();
+
+    if (Array.isArray(executionResults)) {
+      for (const result of executionResults) {
+        const taskId = result.task_id || result.id || 'unknown';
+        const content = result.content || result.response || '';
+
+        // 获取或推断文件路径
+        let filePath = result.targetFile || `generated/${taskId}.js`;
+
+        // 如果子任务中有 targetFile 信息，使用它
+        const subtask = subtasks.find(st => st.id === taskId);
+        if (subtask?.targetFile) {
+          filePath = subtask.targetFile;
+        }
+
+        // 推断语言
+        const ext = filePath.split('.').pop()?.toLowerCase();
+        const extToLang = {
+          js: 'javascript', jsx: 'jsx', ts: 'typescript', tsx: 'tsx',
+          py: 'python', json: 'json', css: 'css', scss: 'scss',
+          less: 'less', html: 'html', md: 'markdown', yaml: 'yaml', yml: 'yaml'
+        };
+        const language = extToLang[ext] || 'javascript';
+
+        files.set(filePath, {
+          path: filePath,
+          content,
+          sourceTaskId: taskId,
+          modelUsed: result.model_used || result.selected_model || 'unknown',
+          language,
+          integrationHints: result.integrationHints || subtask?.integrationHints || {}
+        });
+      }
+    }
+
+    // 构建整合器格式的结果
+    const integrationStyleResult = {
+      success: orchestrateResult.orchestrated || executionResults.length > 0,
+      files,
+      logs: [],
+      warnings: [],
+      qualityReport: null,
+      validationReport: {
+        success: true,
+        message: '编排完成'
+      }
+    };
+
+    // 添加编排元数据
+    if (orchestrateResult.metadata) {
+      integrationStyleResult.orchestrationMetadata = {
+        modelSelections: orchestrateResult.modelSelections,
+        decomposition: orchestrateResult.decomposition,
+        executionSummary: orchestrateResult.execution_results?.execution_summary,
+        selectedModels: orchestrateResult.metadata?.selectedModels || []
+      };
+    }
+
+    return integrationStyleResult;
+  }
+
+  /**
+   * 格式化编排结果并返回适合 Claude Code 的响应
+   *
+   * @param {Object} orchestrateResult - 编排结果
+   * @param {Object} requestBody - 请求体
+   * @param {string} [format='json'] - 输出格式
+   * @returns {Object} 格式化后的响应
+   */
+  _formatResponseForClaudeCode(orchestrateResult, requestBody, format = 'json') {
+    const formattedResult = this._formatOrchestrationResult(orchestrateResult, requestBody);
+
+    // 使用 OutputFormatter 格式化输出
+    let outputFormat = OutputFormat.JSON;
+    if (format === 'claude_code') {
+      outputFormat = OutputFormat.CLAUDE_CODE;
+    } else if (format === 'markdown') {
+      outputFormat = OutputFormat.MARKDOWN;
+    } else if (format === 'text') {
+      outputFormat = OutputFormat.TEXT;
+    }
+
+    const formattedOutput = this.outputFormatter.format(formattedResult, outputFormat, {
+      includeLogs: this.config.debug,
+      includeWarnings: true,
+      includeQualityReport: false,
+      includeValidationReport: true
+    });
+
+    // 如果是 JSON 格式，解析后返回对象
+    if (outputFormat === OutputFormat.JSON) {
+      return JSON.parse(formattedOutput);
+    }
+
+    // 否则返回包含格式化字符串的对象
+    return {
+      ...formattedResult,
+      formattedOutput,
+      outputFormat
+    };
+  }
+
+  /**
+   * 检查响应大小是否超过 Token 限制
+   * 如果超过，则执行截断策略
+   *
+   * @param {Object} result - 响应结果
+   * @param {number} maxTokens - 最大 Token 数（默认 8000，约 6000 中文字符）
+   * @returns {Object} 处理后的结果
+   */
+  _handleTokenLimit(result, maxTokens = 8000) {
+    // 将 Map 转换为普通对象以便正确计算大小
+    const filesObj = result.files instanceof Map
+      ? Object.fromEntries(result.files.entries())
+      : result.files;
+
+    const resultForSize = { ...result, files: filesObj };
+    const resultSize = JSON.stringify(resultForSize).length;
+    // 粗略估算：1 token 约 4 个字符（考虑到中文和混合内容）
+    const estimatedTokens = Math.floor(resultSize / 4);
+
+    if (estimatedTokens <= maxTokens) {
+      return {
+        ...result,
+        tokenUsage: {
+          estimated: estimatedTokens,
+          limit: maxTokens,
+          truncated: false
+        }
+      };
+    }
+
+    this._log(`响应大小超出 Token 限制（估计 ${estimatedTokens} tokens，限制 ${maxTokens} tokens），执行截断策略`, 'warn');
+
+    // 截断策略：保留重要信息，删除详细日志和冗余数据
+    const truncatedResult = {
+      success: result.success,
+      files: result.files,
+      summary: this._generateTruncatedSummary(result),
+      warnings: [...(result.warnings || []), `响应已被截断以适应 Token 限制（原始大小：${estimatedTokens} tokens）`],
+      tokenUsage: {
+        estimated: estimatedTokens,
+        limit: maxTokens,
+        truncated: true,
+        originalSize: estimatedTokens
+      }
+    };
+
+    return truncatedResult;
+  }
+
+  /**
+   * 生成截断后的摘要信息
+   *
+   * @private
+   * @param {Object} result - 原始结果
+   * @returns {Object} 摘要信息
+   */
+  _generateTruncatedSummary(result) {
+    let files = result.files || {};
+    let fileEntries;
+
+    // 支持 Map 和普通对象两种格式
+    if (files instanceof Map) {
+      fileEntries = Array.from(files.entries());
+    } else {
+      fileEntries = Object.entries(files);
+    }
+
+    const fileList = fileEntries.map(([path, file]) => ({
+      path,
+      size: file.content?.length || 0,
+      language: file.language || 'unknown'
+    }));
+
+    return {
+      totalFiles: files instanceof Map ? files.size : fileEntries.length,
+      files: fileList,
+      warningsCount: (result.warnings || []).length,
+      orchestrationMetadata: result.orchestrationMetadata ? {
+        modelSelections: result.orchestrationMetadata.modelSelections,
+        selectedModels: result.orchestrationMetadata.selectedModels
+      } : null
+    };
+  }
+
+  /**
+   * 流式响应支持 - 将大结果集分批返回
+   *
+   * @param {Object} result - 响应结果
+   * @param {Object} res - HTTP 响应对象
+   * @param {number} batchSize - 每批大小
+   * @returns {Promise<void>}
+   */
+  async _streamResponse(result, res, batchSize = 5) {
+    const files = result.files || new Map();
+    const fileEntries = Array.from(files.entries());
+    const totalBatches = Math.ceil(fileEntries.length / batchSize);
+
+    // 设置流式响应头
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Transfer-Encoding': 'chunked'
+    });
+
+    // 发送开始标记
+    res.write(JSON.stringify({
+      type: 'start',
+      totalFiles: fileEntries.length,
+      totalBatches,
+      timestamp: new Date().toISOString()
+    }) + '\n');
+
+    // 分批发送文件
+    for (let i = 0; i < totalBatches; i++) {
+      const batchFiles = fileEntries.slice(i * batchSize, (i + 1) * batchSize);
+      const batchData = {
+        type: 'batch',
+        batchNumber: i + 1,
+        totalBatches,
+        files: batchFiles.map(([filePath, file]) => ({
+          path: filePath,
+          content: file.content,
+          language: file.language,
+          sourceTaskId: file.sourceTaskId
+        }))
+      };
+
+      res.write(JSON.stringify(batchData) + '\n');
+
+      // 等待一小段时间再发送下一批
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // 发送结束标记
+    const endData = {
+      type: 'end',
+      summary: this._generateTruncatedSummary(result),
+      warnings: result.warnings || [],
+      timestamp: new Date().toISOString()
+    };
+
+    res.write(JSON.stringify(endData) + '\n');
+    res.end();
+  }
+
+  /**
+   * 停止服务器
+   */
+  async stop() {
+    return new Promise((resolve) => {
+      if (this.server) {
+        this.server.close(() => {
+          this._log('服务器已关闭');
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
+}
+
+// 命令行运行
+if (require.main === module) {
+  const server = new OrchestratorServer({
+    port: process.env.ORCHESTRATOR_PORT || 3458,
+    ccrRouterUrl: process.env.CCR_ROUTER_URL || 'http://127.0.0.1:3456',
+    debug: process.env.DEBUG === 'true',
+    autoOrchestrate: process.env.AUTO_ORCHESTRATE !== 'false'
+  });
+
+  server.start().catch(err => {
+    console.error('启动失败:', err);
+    process.exit(1);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('\n[Orchestrator] 正在关闭服务器...');
+    await server.stop();
+    process.exit(0);
+  });
+}
+
+module.exports = OrchestratorServer;

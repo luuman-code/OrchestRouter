@@ -1,0 +1,24 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express"],
+    "contract_first": true
+  },
+  "task": {
+    "title": "简单待办事项API",
+    "requirement": "开发一个简单的待办事项管理API，包含创建、查询、更新、删除待办事项的功能"
+  },
+  "task_details": {
+    "deliverables": [
+      {
+        "filePath": "server/index.ts",
+        "type": "logic",
+        "description": "后端入口文件"
+      },
+      {
+        "filePath": "server/routes/todos.ts",
+        "type": "api",
+        "description": "待办事项路由"
+      }
+    ]
+  }
+}

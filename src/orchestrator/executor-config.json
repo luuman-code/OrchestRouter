@@ -1,0 +1,210 @@
+{
+  "$comment": "【已废弃】此配置文件不再使用，请使用 config/config.json",
+  "executor": {
+    "general": {
+      "default_max_concurrency": 10,
+      "default_timeout": 180000,
+      "enable_tracing": true,
+      "enable_monitoring": true,
+      "log_level": "info"
+    },
+    "concurrency": {
+      "max_concurrent": 50,
+      "adaptive": true,
+      "timeout_ms": 30000,
+      "enable_priority_queue": true
+    },
+    "retry": {
+      "max_retries": 3,
+      "base_delay": 1000,
+      "max_delay": 60000,
+      "exponential_base": 2.0,
+      "jitter": true,
+      "retryable_errors": [
+        "TimeoutError",
+        "NetworkError",
+        "RateLimitError",
+        "ServerError",
+        "ConnectionError"
+      ],
+      "base_delays_by_error_type": {
+        "NETWORK_ERROR": 1000,
+        "RATE_LIMIT": 5000,
+        "SERVER_ERROR": 2000,
+        "TIMEOUT": 1000,
+        "VALIDATION_ERROR": 0
+      }
+    },
+    "rate_limit": {
+      "default_rps": 10,
+      "burst_capacity": 30,
+      "enable_coordination": true,
+      "health_check_factor": 0.1,
+      "per_model": {
+        "gpt-4-turbo": {
+          "requests_per_second": 10,
+          "burst_capacity": 30
+        },
+        "claude-3-opus": {
+          "requests_per_second": 8,
+          "burst_capacity": 25
+        }
+      }
+    },
+    "cost_control": {
+      "default_budget": 100.00,
+      "safety_margin": 0.2,
+      "conservative_estimation": true,
+      "enable_real_time_tracking": true
+    },
+    "tracing": {
+      "enabled": true,
+      "log_level": "info",
+      "include_sensitive_data": false,
+      "sampling_rate": 1.0,
+      "sampling_enabled": true,
+      "max_traces": 10000
+    },
+    "monitoring": {
+      "enabled": true,
+      "metrics_collection": true,
+      "performance_logging": true,
+      "alert_thresholds": {
+        "error_rate": 0.05,
+        "response_time": 5000,
+        "resource_usage": 0.8
+      }
+    },
+    "model_specific": {
+      "gpt-4-turbo": {
+        "max_concurrency": 20,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 10,
+          "burst_capacity": 30
+        },
+        "retry_attempts": 3,
+        "preferred": true
+      },
+      "claude-3-opus": {
+        "max_concurrency": 15,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 8,
+          "burst_capacity": 25
+        },
+        "retry_attempts": 3,
+        "preferred": true
+      },
+      "gemini-2.0-flash": {
+        "max_concurrency": 60,
+        "timeout": 90000,
+        "rate_limit": {
+          "requests_per_second": 5,
+          "burst_capacity": 20
+        },
+        "retry_attempts": 2,
+        "preferred": true
+      },
+      "ollama-llama3": {
+        "max_concurrency": 4,
+        "timeout": 30000,
+        "rate_limit": {
+          "requests_per_second": 2,
+          "burst_capacity": 10
+        },
+        "retry_attempts": 1,
+        "preferred": false
+      },
+      "MiniMax-M2.7-highspeed": {
+        "max_concurrency": 20,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 10,
+          "burst_capacity": 30
+        },
+        "retry_attempts": 3,
+        "preferred": true,
+        "alternatives": ["deepseek-chat", "MiniMax-M2.1-highspeed"]
+      },
+      "MiniMax-M2.7": {
+        "max_concurrency": 20,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 10,
+          "burst_capacity": 30
+        },
+        "retry_attempts": 3,
+        "preferred": true,
+        "alternatives": ["deepseek-chat", "MiniMax-M2.1"]
+      },
+      "MiniMax-M2.5-highspeed": {
+        "max_concurrency": 15,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 8,
+          "burst_capacity": 25
+        },
+        "retry_attempts": 3,
+        "preferred": false,
+        "alternatives": ["deepseek-chat", "MiniMax-M2.1-highspeed"]
+      },
+      "MiniMax-M2.5": {
+        "max_concurrency": 15,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 8,
+          "burst_capacity": 25
+        },
+        "retry_attempts": 3,
+        "preferred": false,
+        "alternatives": ["deepseek-chat", "MiniMax-M2.1"]
+      },
+      "deepseek-chat": {
+        "max_concurrency": 30,
+        "timeout": 180000,
+        "rate_limit": {
+          "requests_per_second": 15,
+          "burst_capacity": 40
+        },
+        "retry_attempts": 3,
+        "preferred": true
+      }
+    },
+    "fallback_strategy": {
+      "timeout": {
+        "enabled": true,
+        "max_attempts": 3,
+        "timeout_per_attempt": 90000,
+        "backoff_multiplier": 1.5
+      },
+      "budget": {
+        "enabled": true,
+        "max_cost_reduction": 0.5,
+        "alternative_search_depth": 5
+      },
+      "availability": {
+        "enabled": true,
+        "retry_on_unavailability": true,
+        "max_fallback_models": 3
+      },
+      "global": {
+        "max_total_fallbacks": 5,
+        "enable_chained_fallbacks": true,
+        "log_level": "info"
+      }
+    },
+    "health_check": {
+      "interval": 60000,
+      "timeout": 5000,
+      "enabled": true
+    },
+    "system_coordinator": {
+      "cpu_threshold_high": 0.7,
+      "cpu_threshold_critical": 0.9,
+      "memory_threshold_high": 0.7,
+      "memory_threshold_critical": 0.9,
+      "check_interval": 10000
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请创建一个 AI 智能日程表应用。需要创建以下文件：
+      1. index.html - 主页面，包含标题'AI 智能日程表'和基本的日程管理界面
+      2. styles.css - 样式文件
+      3. app.js - 前端逻辑，包含添加、删除日程功能
+
+      请为每个文件提供完整的代码内容。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "project": "ai_schedule_planner",
+  "outputDir": "C:\\\\Users\\\\LWB\\\\Desktop\\\\AI intelligent schedule planner",
+  "maxTokens": 4000,
+  "response_format": {
+    "type": "tool_calls"
+  }
+}

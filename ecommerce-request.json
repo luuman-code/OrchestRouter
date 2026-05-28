@@ -1,0 +1,142 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js"],
+    "contract_first": true,
+    "shared_context": {},
+    "best_practices": ["使用 TypeScript 类型定义", "遵循 RESTful API 设计", "前后端分离"],
+    "conflict_sensitive_groups": [
+      {
+        "name": "types-group",
+        "priority": 100,
+        "files": ["types/index.ts"],
+        "merge_mode": "selected_only"
+      },
+      {
+        "name": "build-config",
+        "priority": 90,
+        "files": ["package.json", "vite.config.ts", "tsconfig.json"]
+      },
+      {
+        "name": "backend-entry",
+        "priority": 80,
+        "files": ["server/index.ts", "server/db.ts"]
+      },
+      {
+        "name": "backend-routes",
+        "priority": 70,
+        "files": ["server/routes/*.ts"]
+      },
+      {
+        "name": "frontend-core",
+        "priority": 60,
+        "files": ["src/App.tsx", "src/main.tsx", "src/api.ts"]
+      },
+      {
+        "name": "frontend-pages",
+        "priority": 50,
+        "files": ["src/pages/*.tsx"]
+      },
+      {
+        "name": "frontend-components",
+        "priority": 40,
+        "files": ["src/components/*.tsx"]
+      }
+    ]
+  },
+  "task": {
+    "title": "电商平台开发",
+    "requirement": "开发一个完整的电商平台，包含用户管理、商品展示、购物车和订单处理功能",
+    "deliverables": [
+      {
+        "description": "TypeScript 类型定义文件",
+        "filePath": "types/index.ts",
+        "type": "types"
+      },
+      {
+        "description": "项目配置文件",
+        "filePath": "package.json",
+        "type": "config"
+      },
+      {
+        "description": "Vite 配置文件",
+        "filePath": "vite.config.ts",
+        "type": "config"
+      },
+      {
+        "description": "TypeScript 配置",
+        "filePath": "tsconfig.json",
+        "type": "config"
+      },
+      {
+        "description": "服务端入口文件",
+        "filePath": "server/index.ts",
+        "type": "api"
+      },
+      {
+        "description": "数据库配置文件",
+        "filePath": "server/db.ts",
+        "type": "api"
+      },
+      {
+        "description": "用户路由",
+        "filePath": "server/routes/users.ts",
+        "type": "api"
+      },
+      {
+        "description": "商品路由",
+        "filePath": "server/routes/products.ts",
+        "type": "api"
+      },
+      {
+        "description": "购物车路由",
+        "filePath": "server/routes/cart.ts",
+        "type": "api"
+      },
+      {
+        "description": "订单路由",
+        "filePath": "server/routes/orders.ts",
+        "type": "api"
+      },
+      {
+        "description": "前端入口文件",
+        "filePath": "src/main.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "主应用组件",
+        "filePath": "src/App.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "API 客户端",
+        "filePath": "src/api.ts",
+        "type": "ui"
+      },
+      {
+        "description": "商品列表页",
+        "filePath": "src/pages/Products.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "购物车页",
+        "filePath": "src/pages/Cart.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "订单页",
+        "filePath": "src/pages/Orders.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "产品卡片组件",
+        "filePath": "src/components/ProductCard.tsx",
+        "type": "ui"
+      },
+      {
+        "description": "购物车组件",
+        "filePath": "src/components/CartItem.tsx",
+        "type": "ui"
+      }
+    ]
+  }
+}

@@ -1,0 +1,1178 @@
+/**
+ * Prompt 生成器
+ *
+ * 将分解后的任务转换为适合模型处理的 prompt 格式
+ * 根据实现计划 V4 - 功能块 E
+ */
+
+const { PathNormalizer } = require('../../orchestrator/utils/PathNormalizer');
+const TypeAnnotator = require('../types/TypeAnnotator');
+
+/**
+ * EnhancedSubtask - 增强子任务结构
+ *
+ * 提供整合器接口，支持目标文件路径、依赖关系、合并组等高级功能
+ */
+class EnhancedSubtask {
+  constructor(baseSubtask, integrationHints = {}) {
+    this.id = baseSubtask.id || this.generateId();
+    // 使用 types 数组替代单一的 type 字段
+    this.types = baseSubtask.types || [];
+    this.description = baseSubtask.description;
+    this.prompt = baseSubtask.prompt;
+    this.systemPrompt = baseSubtask.systemPrompt || null; // 添加 systemPrompt 字段
+
+    // 初始化路径标准化器
+    this.pathNormalizer = new PathNormalizer();
+
+    // 新增的整合器接口字段
+    this.integrationHints = {
+      // 明确的目标文件路径（经过冲突解决后可能已变更）
+      targetFile: integrationHints.targetFile || baseSubtask.filePath || null,
+
+      // 若共享文件，标明目标代码区域
+      region: integrationHints.region || null,
+
+      // 依赖的其他子任务 ID
+      dependsOn: integrationHints.dependsOn || [],
+
+      // 合并组 ID（如果与其它子任务合并到同一文件）
+      mergeGroupId: integrationHints.mergeGroupId || null,
+
+      // 合并策略
+      mergeStrategy: integrationHints.mergeStrategy || null,
+
+      // 代码区域约束
+      regionConstraints: integrationHints.regionConstraints || null,
+
+      // 原始信息（用于追溯）
+      originalTask: baseSubtask,
+      originalFilePath: baseSubtask.filePath,
+      groupId: baseSubtask.groupId || null
+    };
+
+    // 保留其他原有字段
+    this.confidence = baseSubtask.confidence || 0;
+    this.tagSource = baseSubtask.tagSource;
+    this.filePath = baseSubtask.filePath;
+    this.pathConfidence = baseSubtask.pathConfidence || 0;
+  }
+
+  generateId() {
+    return `subtask_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+/**
+ * SubtaskPromptGenerator - 子任务 Prompt 生成器
+ */
+class PromptGenerator {
+  constructor(config = {}) {
+    this.config = config;
+    this.templateRegistry = new Map();
+
+    // 初始化路径标准化器
+    try {
+      this.pathNormalizer = new PathNormalizer();
+    } catch (error) {
+      console.warn('无法初始化路径标准化器:', error.message);
+      this.pathNormalizer = null;
+    }
+
+    // 初始化类型标注器（用于聚合 types）
+    try {
+      this.typeAnnotator = new TypeAnnotator();
+    } catch (error) {
+      console.warn('无法初始化类型标注器:', error.message);
+      this.typeAnnotator = null;
+    }
+
+    // 注册默认模板
+    this.registerDefaultTemplates();
+  }
+
+  /**
+   * 注册默认的 prompt 模板
+   */
+  registerDefaultTemplates() {
+    // 通用模板
+    this.registerTemplate('general', {
+      name: '通用任务模板',
+      template: `# Task: {{taskTitle}}
+
+## Context
+{{context}}
+
+## Requirement
+{{requirement}}
+
+## Current Subtask
+{{deliverable}}
+
+## Constraints
+{{constraints}}
+
+# Priority: {{priority}}`
+    });
+
+    // 前端 UI 组件模板
+    this.registerTemplate('ui', {
+      name: 'UI 组件模板',
+      template: `# Task: {{taskTitle}}
+
+## Context
+- Project Type: frontend
+- Tech Stack: {{techStack}}
+
+## Requirement
+{{requirement}}
+
+## Current Subtask
+{{deliverable}}
+
+# Priority: {{priority}}`
+    });
+
+    // 样式文件模板
+    this.registerTemplate('style', {
+      name: '样式模板',
+      template: `# Task: {{taskTitle}}
+
+## Context
+- Tech Stack: {{techStack}}
+
+## Requirement
+{{requirement}}
+
+## Current Subtask
+{{deliverable}}
+
+# Priority: {{priority}}`
+    });
+
+    // API 开发模板
+    this.registerTemplate('api', {
+      name: 'API 开发模板',
+      template: `# Task: {{taskTitle}}
+
+## Context
+- Tech Stack: {{techStack}}
+
+## Requirement
+{{requirement}}
+
+## Current Subtask
+{{deliverable}}
+
+# Priority: {{priority}}`
+    });
+
+    // 测试模板
+    this.registerTemplate('test', {
+      name: '测试模板',
+      template: `# Task: {{taskTitle}}
+
+## Context
+- Tech Stack: {{techStack}}
+
+## Requirement
+{{requirement}}
+
+## Current Subtask
+{{deliverable}}
+
+# Priority: {{priority}}`
+    });
+  }
+
+  /**
+   * 注册新的 prompt 模板
+   */
+  registerTemplate(name, templateConfig) {
+    this.templateRegistry.set(name, templateConfig);
+  }
+
+  /**
+   * 主生成方法 - 生成基础子任务列表
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Array} taggedDeliverables - 已标注类型的交付物列表
+   * @param {Object} implementationPlan - 实现计划
+   * @returns {Array} 子任务列表
+   */
+  generate(parsedTask, taggedDeliverables, implementationPlan = null) {
+    const subtasks = [];
+    for (const item of taggedDeliverables) {
+      const promptResult = this.buildPrompt(parsedTask, item, implementationPlan, taggedDeliverables); // Pass all deliverables as reference
+      // 使用 types 数组
+      const types = item.types || [];
+      const primaryType = types.length > 0 ? types[0].type : (item.type || 'unknown');
+      subtasks.push({
+        type: primaryType, // 保留 type 字段用于兼容性
+        types: types,
+        description: item.description,
+        filePath: item.filePath,
+        pathConfidence: item.pathConfidence || 0,
+        prompt: promptResult.prompt,
+        systemPrompt: promptResult.systemPrompt, // 添加 systemPrompt 字段
+        tagSource: item.tagSource,
+        debugInfo: item.debugInfo || {},
+        confidence: types.length > 0 ? types[0].confidence : 0,
+        // 保留原始 deliverable 的 integrationHints
+        integrationHints: item.integrationHints || null
+      });
+    }
+    return subtasks;
+  }
+
+  /**
+   * 增强生成方法 - 支持分组和依赖图的子任务生成
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Array} groupedDeliverables - 已分组的交付物列表
+   * @param {Array} groups - 分组信息
+   * @param {Array} dependencyGraph - 依赖关系图
+   * @param {Object} implementationPlan - 实现计划
+   * @returns {Array} 增强子任务列表
+   */
+  generateEnhanced(parsedTask, groupedDeliverables, groups, dependencyGraph, implementationPlan = null) {
+    const subtasks = [];
+
+    for (const item of groupedDeliverables) {
+      // 构建集成提示
+      const integrationHints = this.buildIntegrationHints(item, groups, dependencyGraph);
+
+      // 使用 types 数组
+      const types = item.types || [];
+
+      const promptResult = this.buildPrompt(parsedTask, item, implementationPlan, groupedDeliverables); // Pass all deliverables as reference
+
+      const enhancedSubtask = new EnhancedSubtask({
+        types: types,
+        description: item.description,
+        filePath: item.filePath,
+        pathConfidence: item.pathConfidence || 0,
+        prompt: promptResult.prompt,
+        systemPrompt: promptResult.systemPrompt, // 添加 systemPrompt 字段
+        tagSource: item.tagSource,
+        debugInfo: item.debugInfo || {},
+        confidence: types.length > 0 ? types[0].confidence : 0,
+        id: item.id || this.generateSubtaskId()
+      }, integrationHints);
+
+      subtasks.push(enhancedSubtask);
+    }
+
+    return subtasks;
+  }
+
+  /**
+   * 根据分组生成子任务 - 每个分组生成一个子任务（而不是每个deliverable）
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Array} groups - 分组信息，每个元素包含 deliverables 数组
+   * @param {Array} dependencyGraph - 依赖关系图
+   * @param {Object} implementationPlan - 实现计划
+   * @returns {Array} 子任务列表，每个分组一个子任务
+   */
+  generateFromGroups(parsedTask, groups, dependencyGraph, implementationPlan = null) {
+    const subtasks = [];
+
+    // 收集所有 deliverables 作为参考
+    const allGroupDeliverables = groups.flatMap(g => g.deliverables || []);
+
+    for (const group of groups) {
+      const groupDeliverables = group.deliverables || [];
+
+      // 如果分组只有一个deliverable，使用原有逻辑
+      if (groupDeliverables.length === 1) {
+        const item = groupDeliverables[0];
+        const promptResult = this.buildPrompt(parsedTask, item, implementationPlan, allGroupDeliverables); // Pass all deliverables as reference
+        // 使用 types 数组
+        const types = item.types || [];
+        const primaryType = types.length > 0 ? types[0].type : (item.type || 'general');
+        subtasks.push({
+          type: primaryType, // 保留 type 字段用于兼容性
+          types: types,
+          description: item.description,
+          filePath: item.filePath,
+          pathConfidence: item.pathConfidence || 0,
+          prompt: promptResult.prompt,
+          systemPrompt: promptResult.systemPrompt, // 添加 systemPrompt 字段
+          tagSource: item.tagSource,
+          debugInfo: item.debugInfo || {},
+          confidence: types.length > 0 ? types[0].confidence : 0,
+          id: item.id || this.generateSubtaskId(),
+          // 添加分组信息
+          mergeGroupId: group.id || null,
+          groupSize: 1,
+          // 保留原始 deliverable 的 integrationHints
+          integrationHints: item.integrationHints || null
+        });
+      } else {
+        // 分组有多个deliverables，合并成一个子任务
+        const mergedDescription = groupDeliverables.map(d => d.description).join('; ');
+        const mergedFilePaths = groupDeliverables.map(d => d.filePath).filter(f => f);
+
+        // 收集所有 types 并聚合
+        const allTypes = groupDeliverables.flatMap(d => d.types || []);
+        const aggregatedTypes = this.typeAnnotator ? this.typeAnnotator._aggregateTypes(allTypes) : allTypes.slice(0, 5);
+        const primaryType = aggregatedTypes.length > 0 ? aggregatedTypes[0].type : 'general';
+
+        // 构建合并的 prompt
+        const mergedPromptResult = this.buildMergedPrompt(parsedTask, groupDeliverables, implementationPlan);
+
+        // 收集所有 deliverables 的 integrationHints，合并成一个包含所有文件信息的列表
+        const allIntegrationHints = groupDeliverables.map(d => ({
+          targetFile: d.filePath,
+          description: d.description,
+          integrationHints: d.integrationHints || null
+        }));
+
+        // 保留所有文件的 targetFile 列表（用于整合器正确处理）
+        const mergedHints = {
+          targetFile: mergedFilePaths[0] || null, // 保留第一个作为主要目标
+          targetFiles: mergedFilePaths, // 添加所有文件路径列表
+          mergedDeliverables: allIntegrationHints, // 完整的 deliverables 信息
+          mergeGroupId: group.id || null,
+          mergeStrategy: 'separate' // 明确告知应该分别生成文件
+        };
+
+        subtasks.push({
+          type: primaryType, // 保留 type 字段用于兼容性
+          types: aggregatedTypes,
+          description: mergedDescription,
+          filePath: mergedFilePaths[0] || null, // 使用第一个文件的路径
+          pathConfidence: 0,
+          prompt: mergedPromptResult.prompt,
+          systemPrompt: mergedPromptResult.systemPrompt, // 添加 systemPrompt 字段
+          tagSource: 'semantic_grouping',
+          debugInfo: { grouped: true, groupSize: groupDeliverables.length },
+          confidence: aggregatedTypes.length > 0 ? aggregatedTypes[0].confidence : 0.8,
+          id: group.id || this.generateSubtaskId(),
+          // 添加分组信息
+          mergeGroupId: group.id || null,
+          groupSize: groupDeliverables.length,
+          mergedDeliverables: groupDeliverables.map(d => d.description),
+          // 使用合并后的 integrationHints
+          integrationHints: mergedHints
+        });
+      }
+    }
+
+    return subtasks;
+  }
+
+  /**
+   * 构建合并的 Prompt - 用于分组内有多个deliverables的情况
+   * 明确告知大模型需要为每个文件单独生成代码
+   */
+  buildMergedPrompt(parsedTask, deliverables, implementationPlan = null) {
+    const taskTitle = parsedTask.title || 'Untitled Task';
+    const context = parsedTask.context ? this.formatContext(parsedTask.context) : '';
+    const requirement = parsedTask.requirement || '';
+
+    const deliverableList = deliverables.map((d, idx) => {
+      // 使用 types 数组获取主类型
+      const types = d.types || [];
+      const typeStr = types.length > 0 ? types.map(t => t.type).join(', ') : (d.type || 'general');
+      return `${idx + 1}. [${typeStr}] ${d.description} -> FILE: ${d.filePath || 'N/A'}`;
+    }).join('\n');
+
+    // 获取 implementationPlan 中的约束
+    let constraintsText = '';
+    if (implementationPlan) {
+      const planSummary = this.formatImplementationPlanForPrompt(implementationPlan);
+      if (planSummary.trim()) {
+        constraintsText = `\n\n## Implementation Constraints\n${planSummary}`;
+      }
+    }
+
+    // 构建 systemPrompt（代码标准和规则）
+    const systemPrompt = `## 输出规则
+- 为每个文件生成完整可运行的代码
+- 不要生成其他文件
+- 不要占位符或 TODO
+- 不要空导入
+- 使用相对路径
+${implementationPlan?.code_standards ? `
+### Code Standards:
+${implementationPlan.code_standards.map(s => `- ${s}`).join('\n')}
+` : ''}
+${implementationPlan?.best_practices ? `
+### Best Practices:
+${implementationPlan.best_practices.map(p => `- ${p}`).join('\n')}
+` : ''}`;
+
+    // 构建 prompt（具体任务）
+    // 使用明确的分隔符格式，便于整合器解析
+    const fileMarkers = deliverables.map((d, idx) => {
+      const fileName = d.filePath || `file${idx + 1}`;
+      return `[FILE:${idx + 1}]${fileName}`;
+    }).join('\n');
+
+    const prompt = `# Task: ${taskTitle}
+
+## Context
+${context}
+
+## Requirement
+${requirement}
+
+## CRITICAL: MULTIPLE FILES TASK - ${deliverables.length} files to generate
+You MUST generate code for ALL ${deliverables.length} files listed below. Each file must be generated separately and completely.
+
+## Files to Generate:
+${deliverableList}
+
+## MANDATORY Output Format - MUST FOLLOW EXACTLY:
+Use the following EXACT format with index markers for each file:
+
+[FILE:1]src/pages/Home.vue
+[BEGIN:1]
+<template>
+  <!-- Home page code -->
+</template>
+[END:1]
+
+[FILE:2]src/pages/ProductList.vue
+[BEGIN:2]
+<script setup lang="ts">
+// ProductList code
+</script>
+[END:2]
+
+## Format Rules:
+1. Each file MUST start with [FILE:N]FILE_PATH on its own line
+2. Each file MUST have [BEGIN:N] marker before content
+3. Each file MUST have [END:N] marker after content (on its own line)
+4. N is the file index starting from 1, in ORDER of the "Files to Generate" list
+5. Do NOT skip any file index numbers
+6. Do NOT combine files - each file gets its own [BEGIN:N]...[END:N] block
+
+## Example for 2 files:
+[FILE:1]src/components/Button.vue
+[BEGIN:1]
+<script setup>
+export default { name: 'Button' }
+</script>
+<template><button><slot /></button></template>
+[END:1]
+
+[FILE:2]src/components/Input.vue
+[BEGIN:2]
+<script setup>
+export default { name: 'Input' }
+</script>
+<template><input /></template>
+[END:2]
+
+## CRITICAL: Common Errors to Avoid:
+- DO NOT forget [END:N] for each file
+- DO NOT put [FILE:N+1] immediately after [END:N] without a newline
+- Every [BEGIN:N] MUST have a matching [END:N]
+${constraintsText}`;
+
+    return {
+      systemPrompt: systemPrompt,
+      prompt: prompt
+    };
+  }
+
+  /**
+   * 构建集成提示
+   * @param {Object} item - 交付物
+   * @param {Array} groups - 分组信息
+   * @param {Array} dependencyGraph - 依赖关系图
+   * @returns {Object} 集成提示信息
+   */
+  buildIntegrationHints(item, groups, dependencyGraph) {
+    const hints = {
+      targetFile: item.filePath || null,
+      region: item.region || null,
+      dependsOn: [],
+      mergeGroupId: item.groupId || null,
+      mergeStrategy: item.mergeStrategy || null,
+      regionConstraints: item.regionConstraints || null
+    };
+
+    // 如果项目在组中，添加组相关的依赖信息
+    if (item.groupId) {
+      const groupDepIds = dependencyGraph
+        .filter(dep => dep.from === item.groupId)
+        .map(dep => dep.to);
+      hints.dependsOn = groupDepIds;
+    }
+
+    // 如果有区域信息，添加区域约束
+    if (item.targetRegion) {
+      hints.region = item.targetRegion.type;
+      hints.regionConstraints = item.targetRegion.constraints;
+    }
+
+    return hints;
+  }
+
+  /**
+   * 生成 Prompt（供旧接口调用）
+   */
+  generatePrompts(deliverables, baseTask) {
+    return deliverables.map((deliverable) => {
+      const templateName = this.selectTemplate(deliverable);
+      return this.generatePrompt(deliverable, baseTask, templateName);
+    });
+  }
+
+  /**
+   * 生成单个 Prompt
+   */
+  generatePrompt(deliverable, baseTask, templateName = 'general') {
+    const template = this.templateRegistry.get(templateName) || this.templateRegistry.get('general');
+
+    if (!template) {
+      throw new Error(`Template ${templateName} not found`);
+    }
+
+    // 准备替换变量
+    const variables = {
+      taskTitle: baseTask.title || 'Untitled Task',
+      context: this.formatContext(baseTask.context),
+      requirement: baseTask.requirement || '',
+      subtaskDescription: deliverable.description || deliverable.content || 'Unknown subtask',
+      deliverable: this.formatDeliverable(deliverable),
+      constraints: baseTask.constraints || 'None',
+      priority: deliverable.priority || baseTask.priority || 'medium',
+      techStack: (baseTask.context && baseTask.context.techStack)
+        ? baseTask.context.techStack.join(', ')
+        : 'Not specified'
+    };
+
+    // 替换模板中的变量
+    let prompt = template.template;
+    for (const [key, value] of Object.entries(variables)) {
+      const placeholder = new RegExp(`{{${key}}}`, 'g');
+      prompt = prompt.replace(placeholder, value);
+    }
+
+    // 使用 types 数组替代单一的 type 字段
+    const types = deliverable.types || [];
+    const primaryType = types.length > 0 ? types[0].type : (deliverable.type || 'general');
+
+    return {
+      id: deliverable.id || this.generateSubtaskId(),
+      type: primaryType, // 保留 type 字段用于兼容性
+      types: types, // 使用 types 数组
+      description: deliverable.description,
+      filePath: deliverable.filePath,
+      pathConfidence: deliverable.pathConfidence || 0,
+      prompt: prompt,
+      tagSource: deliverable.tagSource || 'rule_matching',
+      confidence: types.length > 0 ? types[0].confidence : (deliverable.confidence || 0),
+      debugInfo: deliverable.debugInfo || {}
+    };
+  }
+
+  /**
+   * 构建 Prompt（符合计划要求的方法）
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Object} deliverable - 交付物信息
+   * @param {Object} implementationPlan - 实现计划
+   */
+  /**
+   * 构建 Prompt
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Object} deliverable - 当前要处理的交付物
+   * @param {Object} implementationPlan - 实现计划
+   * @param {Array} allDeliverables - 所有交付物列表（作为参考，不要求全部生成）
+   * @returns {string} 生成的 prompt
+   */
+  buildPrompt(parsedTask, deliverable, implementationPlan = null, allDeliverables = null) {
+    const parts = [];
+
+    // 获取预期的文件
+    const expectedFile = deliverable.filePath || '';
+    // 使用 types 数组获取主类型
+    const types = deliverable.types || [];
+    const expectedType = types.length > 0 ? types[0].type : (deliverable.type || 'unknown');
+
+    // ===== 首先告诉模型要做什么（最重要）=====
+    parts.push('## 任务：生成代码文件');
+    parts.push('');
+    parts.push(this.formatDeliverable(deliverable));
+    parts.push('');
+
+    // ===== 然后提供需求和上下文 =====
+    // Task 标题
+    if (parsedTask.title || parsedTask.task) {
+      parts.push(`# 项目: ${parsedTask.title || parsedTask.task}`);
+      parts.push('');
+    }
+
+    // Implementation Plan 部分
+    if (implementationPlan) {
+      const planSummary = this.formatImplementationPlanForPrompt(implementationPlan);
+      if (planSummary.trim()) {
+        parts.push(planSummary);
+        parts.push('');
+      }
+    }
+
+    // ===== 输出规则（关键约束）=====
+    parts.push('## 输出规则');
+    parts.push(`- 只生成指定的文件: ${expectedFile || '(见下方)'}`);
+    parts.push('- 不生成其他文件');
+    parts.push('- 输出完整可运行的代码');
+    parts.push('- 不要占位符或 TODO');
+    parts.push('- 不要空导入');
+    parts.push('- 使用相对路径');
+    parts.push('');
+
+    // All Deliverables (Reference Only) - 告知模型全局信息，但不要求生成所有文件
+    if (allDeliverables && Array.isArray(allDeliverables) && allDeliverables.length > 1) {
+      parts.push('## 📋 All Project Files (Reference Only)');
+      parts.push(`Total: ${allDeliverables.length} files`);
+      parts.push('');
+      parts.push('⚠️ IMPORTANT: You ONLY need to generate the file marked with [CURRENT TASK].');
+      parts.push('Other files will be generated by parallel subtasks. Do NOT generate them.');
+      parts.push('');
+      allDeliverables.forEach((d, index) => {
+        const isCurrent = d.filePath === deliverable.filePath;
+        const marker = isCurrent ? '👉 [CURRENT TASK - GENERATE THIS]' : '⏭️ [SKIP - OTHER SUBTASK]';
+        const desc = d.description || '';
+        parts.push(`${index + 1}. ${marker}`);
+        parts.push(`   File: ${d.filePath || 'unknown'}`);
+        if (desc) parts.push(`   Desc: ${desc}`);
+        parts.push('');
+      });
+      parts.push('---');
+      parts.push('👉 ABOVE IS YOUR TASK: Generate ONLY the file marked with [CURRENT TASK]');
+      parts.push('');
+    }
+
+    // Constraints 部分（可选）
+    if (parsedTask.constraints) {
+      parts.push('## Constraints');
+      parts.push(parsedTask.constraints);
+      parts.push('');
+    }
+
+    // Priority
+    if (parsedTask.priority) {
+      parts.push(`# Priority: ${parsedTask.priority}`);
+    }
+
+    // 输出格式要求（关键约束）
+    const outputFormat = this.buildOutputFormatSection(deliverable.filePath);
+    if (outputFormat) {
+      parts.push('');
+      parts.push(outputFormat);
+    }
+
+    // Debug Info（如果有）
+    if (deliverable.debugInfo && deliverable.debugInfo.tagSources?.length > 0) {
+      parts.push('');
+      parts.push('## Debug Info:');
+      parts.push('- Tag Sources: ' + deliverable.debugInfo.tagSources.map(s => s.type).join(', '));
+      parts.push('- Confidence: ' + deliverable.confidence);
+    }
+
+    const fullPrompt = parts.join('\n');
+
+    // 拆分 systemPrompt 和 prompt
+    // systemPrompt 包含：输出规则、代码标准、路径规范、最佳实践等系统级指令
+    // prompt 包含：具体任务描述、当前交付物等
+    const systemPromptParts = [
+      '## 输出规则',
+      '- 只生成指定的文件: ' + (expectedFile || '(见下方)'),
+      '- 不生成其他文件',
+      '- 输出完整可运行的代码',
+      '- 不要占位符或 TODO',
+      '- 不要空导入',
+      '- 使用相对路径',
+      ''
+    ];
+
+    // 如果有 implementationPlan，添加代码标准和最佳实践
+    if (implementationPlan) {
+      if (implementationPlan.code_standards) {
+        systemPromptParts.push('### Code Standards:');
+        implementationPlan.code_standards.forEach(standard => {
+          if (standard === 'no_empty_imports') {
+            systemPromptParts.push('- NO EMPTY IMPORTS: 禁止空的导入语句');
+          } else if (standard === 'use_relative_paths') {
+            systemPromptParts.push('- USE RELATIVE PATHS: 必须使用相对路径');
+          } else if (standard === 'no_absolute_paths') {
+            systemPromptParts.push('- NO ABSOLUTE PATHS: 禁止使用本地绝对路径');
+          }
+        });
+        systemPromptParts.push('');
+      }
+
+      if (implementationPlan.best_practices) {
+        systemPromptParts.push('### Best Practices:');
+        implementationPlan.best_practices.forEach(practice => {
+          systemPromptParts.push('- ' + practice);
+        });
+        systemPromptParts.push('');
+      }
+    }
+
+    const systemPrompt = systemPromptParts.join('\n');
+
+    // prompt 只包含任务相关的具体信息
+    const promptParts = [
+      '# 项目: ' + (parsedTask.title || parsedTask.task || '代码生成任务'),
+      ''
+    ];
+
+    // 添加需求描述（关键！让模型知道要实现什么功能）
+    if (parsedTask.requirement) {
+      promptParts.push('## 需求描述');
+      promptParts.push(parsedTask.requirement);
+      promptParts.push('');
+    }
+
+    promptParts.push('## 当前任务');
+    promptParts.push(this.formatDeliverable(deliverable));
+    promptParts.push('');
+
+    if (implementationPlan) {
+      const planSummary = this.formatImplementationPlanForPrompt(implementationPlan);
+      if (planSummary.trim()) {
+        promptParts.push(planSummary);
+        promptParts.push('');
+      }
+    }
+
+    // All Deliverables (Reference Only)
+    if (allDeliverables && Array.isArray(allDeliverables) && allDeliverables.length > 1) {
+      promptParts.push('## 所有项目文件 (仅参考)');
+      promptParts.push(`总计: ${allDeliverables.length} 个文件`);
+      promptParts.push('');
+      promptParts.push('⚠️ 重要: 你只需要生成标记为 [当前任务] 的文件');
+      promptParts.push('');
+      allDeliverables.forEach((d, index) => {
+        const isCurrent = d.filePath === deliverable.filePath;
+        const marker = isCurrent ? '👉 [当前任务 - 生成此文件]' : '⏭️ [跳过 - 其他子任务]';
+        const desc = d.description || '';
+        promptParts.push(`${index + 1}. ${marker}`);
+        promptParts.push(`   文件: ${d.filePath || 'unknown'}`);
+        if (desc) promptParts.push(`   描述: ${desc}`);
+        promptParts.push('');
+      });
+      promptParts.push('---');
+      promptParts.push('👉 以上是你的任务: 只生成标记为 [当前任务] 的文件');
+      promptParts.push('');
+    }
+
+    if (parsedTask.constraints) {
+      promptParts.push('## 约束');
+      promptParts.push(parsedTask.constraints);
+      promptParts.push('');
+    }
+
+    if (parsedTask.priority) {
+      promptParts.push(`# 优先级: ${parsedTask.priority}`);
+    }
+
+    if (outputFormat) {
+      promptParts.push('');
+      promptParts.push(outputFormat);
+    }
+
+    const prompt = promptParts.join('\n');
+
+    return {
+      systemPrompt: systemPrompt,
+      prompt: prompt
+    };
+  }
+
+  /**
+   * 构建修复专用的 Prompt - 支持代码上下文注入和明确输出格式
+   * @param {Object} parsedTask - 解析后的任务对象
+   * @param {Object} deliverable - 交付物信息
+   * @param {string} currentFileContent - 当前文件内容
+   * @param {Object} options - 修复选项
+   * @returns {string} 生成的修复 Prompt
+   */
+  buildPromptForFix(parsedTask, deliverable, currentFileContent = '', options = {}) {
+    const parts = [];
+
+    // 修复任务标题
+    parts.push(`# Fix Request: ${parsedTask.title || 'Code Fix'}`);
+    parts.push('');
+
+    // 修复描述
+    if (parsedTask.description) {
+      parts.push('## Fix Description');
+      parts.push(parsedTask.description);
+      parts.push('');
+    }
+
+    // 冲突信息（如果有）
+    if (parsedTask.conflicts && Array.isArray(parsedTask.conflicts)) {
+      parts.push('## Conflicts to Fix');
+      for (const conflict of parsedTask.conflicts) {
+        parts.push(`- [${conflict.severity || 'MEDIUM'}] ${conflict.type}: ${conflict.suggestion || conflict.details?.error_message || 'No details'}`);
+      }
+      parts.push('');
+    }
+
+    // 当前文件内容（代码上下文注入）
+    parts.push('## Current File Content');
+    parts.push(`**File Path:** ${deliverable.filePath || 'unknown'}`);
+    parts.push('');
+    parts.push('```' + this.inferLanguageFromFile(deliverable.filePath));
+    parts.push(currentFileContent || '// No existing content available');
+    parts.push('```');
+    parts.push('');
+
+    // 修复要求
+    parts.push('## Fix Requirements');
+    if (parsedTask.changes && Array.isArray(parsedTask.changes)) {
+      parts.push('Make the following changes:');
+      for (const change of parsedTask.changes) {
+        parts.push(`- ${change}`);
+      }
+      parts.push('');
+    }
+
+    // Use the standard output format section method (overriding the general one with fix-specific requirements)
+    parts.push('## Output Format Requirements');
+    parts.push('**IMPORTANT:** You MUST output the complete fixed file content in the following format ONLY:');
+    parts.push('');
+    parts.push('```' + this.inferLanguageFromFile(deliverable.filePath));
+    parts.push('// Your complete fixed code here - the entire file content after applying fixes');
+    parts.push('```');
+    parts.push('');
+    parts.push('### Critical Requirements:');
+    parts.push('1. Output the **COMPLETE** fixed file content in a SINGLE code block, not just the changed parts');
+    parts.push('2. Preserve all existing functionality that is not being fixed');
+    parts.push('3. Keep existing code style, formatting, and comments where possible');
+    parts.push('4. Only make the necessary changes to fix the described issues');
+    parts.push('5. Ensure the fixed code is syntactically correct and ready to use');
+    parts.push('6. **DO NOT include any thinking, reasoning, or analysis content** (如 <think> 或</think>)');
+    parts.push('7. **DO NOT include any explanatory text** outside the code block');
+    parts.push('8. **DO NOT use thinking tags** like <think>,</think>,<thinking> or similar');
+    parts.push('9. Output ONLY the final code - no preambles, no explanations, no analysis');
+    parts.push('');
+
+    // 上下文信息（如果有）
+    if (parsedTask.context && Object.keys(parsedTask.context).length > 0) {
+      parts.push('## Context');
+      for (const [key, value] of Object.entries(parsedTask.context)) {
+        if (typeof value === 'object') {
+          parts.push(`- ${key}: ${JSON.stringify(value)}`);
+        } else {
+          parts.push(`- ${key}: ${value}`);
+        }
+      }
+      parts.push('');
+    }
+
+    return parts.join('\n');
+  }
+
+  /**
+   * 根据文件扩展名推断语言
+   * @param {string} filePath - 文件路径
+   * @returns {string} 语言标识符
+   */
+  inferLanguageFromFile(filePath) {
+    if (!filePath) return 'typescript';
+
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    const langMap = {
+      'js': 'javascript',
+      'jsx': 'jsx',
+      'ts': 'typescript',
+      'tsx': 'tsx',
+      'py': 'python',
+      'json': 'json',
+      'css': 'css',
+      'scss': 'scss',
+      'less': 'less',
+      'html': 'html',
+      'md': 'markdown',
+      'yaml': 'yaml',
+      'yml': 'yaml',
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'go': 'go',
+      'rs': 'rust',
+      'rb': 'ruby',
+      'php': 'php',
+      'swift': 'swift',
+      'kt': 'kotlin',
+      'sh': 'bash',
+      'sql': 'sql'
+    };
+
+    return langMap[ext] || 'typescript';
+  }
+
+  /**
+   * 构建输出格式要求部分（简化版）
+   * @param {string} filePath - 文件路径
+   * @returns {string} 输出格式要求文本
+   */
+  buildOutputFormatSection(filePath) {
+    const language = this.inferLanguageFromFile(filePath);
+    return `## 输出格式要求（必须严格遵守）
+
+**绝对禁止包含以下内容：**
+- ❌ 禁止使用 <think> 标签包裹任何内容
+- ❌ 禁止使用 </think> 标签
+- ❌ 禁止使用 <thinking> 标签
+- ❌ 禁止输出任何思考过程、推理过程或分析内容
+- ❌ 禁止在代码前或代码后添加任何说明文字
+- ❌ 禁止使用任何 markdown 代码块标记（包括 json、xml、html、typescript、javascript 等）
+
+**必须遵守以下规则：**
+1. 只输出目标文件的完整代码内容
+2. **禁止使用任何 markdown 代码块** - 直接输出纯代码
+3. 对于 JSON 文件（如 package.json），直接输出 JSON 内容，不要用 json 包裹
+4. 代码必须完整、可运行
+5. 不要包含任何 TODO 或占位符
+6. 直接输出代码，不要有任何前缀或后缀说明`;
+  }
+
+  /**
+   * 格式化交付物信息
+   * 生成明确的代码生成指令
+   */
+  formatDeliverable(item) {
+    // 使用 types 数组获取主类型
+    const types = item.types || [];
+    const primaryType = types.length > 0 ? types[0].type : 'unknown';
+
+    // 生成明确的文件生成指令
+    const filePath = item.filePath || 'unknown';
+    const description = item.description || 'No description';
+
+    // 直接告诉模型要生成什么文件
+    return `## 🎯 GENERATE THIS FILE
+
+File Path: ${filePath}
+Description: ${description}
+Type: ${primaryType}
+
+Please generate the complete code for the file above.`;
+  }
+
+  /**
+   * 根据交付物类型选择合适的模板
+   */
+  selectTemplate(deliverable) {
+    // 使用 types 数组获取主类型
+    const types = deliverable.types || [];
+    const type = types.length > 0 ? types[0].type : (deliverable.type || 'general');
+
+    // 根据类型映射到适当的模板
+    switch (type.toLowerCase()) {
+      case 'ui':
+      case 'component':
+      case 'frontend':
+        return 'ui';
+      case 'style':
+      case 'css':
+      case 'scss':
+        return 'style';
+      case 'api':
+      case 'endpoint':
+      case 'backend':
+        return 'api';
+      case 'test':
+      case 'testing':
+        return 'test';
+      default:
+        return 'general';
+    }
+  }
+
+  /**
+   * 格式化上下文信息
+   */
+  formatContext(context) {
+    if (!context) return 'None';
+
+    const lines = [];
+    for (const [key, value] of Object.entries(context)) {
+      if (typeof value === 'object' && Array.isArray(value)) {
+        lines.push(`- ${key}: ${value.join(', ')}`);
+      } else if (typeof value === 'object' && value !== null) {
+        lines.push(`- ${key}: ${JSON.stringify(value)}`);
+      } else {
+        lines.push(`- ${key}: ${value}`);
+      }
+    }
+
+    return lines.length > 0 ? lines.join('\n') : 'None';
+  }
+
+  /**
+   * 生成子任务 ID
+   */
+  generateSubtaskId() {
+    return `subtask_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * 标准化子任务中的文件路径
+   *
+   * @param {Object} subtask - 子任务对象
+   * @returns {Promise<Object>} 标准化后的子任务对象
+   */
+  async normalizeSubtaskPaths(subtask) {
+    if (!this.pathNormalizer || !subtask) {
+      return subtask;
+    }
+
+    const normalizedSubtask = { ...subtask };
+
+    // 标准化主要文件路径
+    if (subtask.filePath) {
+      try {
+        const pathResult = await this.pathNormalizer.normalize(subtask.filePath, {
+          validateExistence: false,
+          normalizeSeparators: true,
+          normalizeCase: true
+        });
+        normalizedSubtask.filePath = pathResult.normalizedPath;
+      } catch (error) {
+        console.warn(`标准化子任务路径失败: ${error.message}`, { filePath: subtask.filePath });
+      }
+    }
+
+    // 标准化整合提示中的目标文件路径
+    if (subtask.integrationHints && subtask.integrationHints.targetFile) {
+      try {
+        const pathResult = await this.pathNormalizer.normalize(subtask.integrationHints.targetFile, {
+          validateExistence: false,
+          normalizeSeparators: true,
+          normalizeCase: true
+        });
+        if (!normalizedSubtask.integrationHints) {
+          normalizedSubtask.integrationHints = {};
+        }
+        normalizedSubtask.integrationHints.targetFile = pathResult.normalizedPath;
+      } catch (error) {
+        console.warn(`标准化整合目标路径失败: ${error.message}`, { targetFile: subtask.integrationHints.targetFile });
+      }
+    }
+
+    return normalizedSubtask;
+  }
+
+  /**
+   * 批量标准化子任务中的文件路径
+   *
+   * @param {Array} subtasks - 子任务数组
+   * @returns {Promise<Array>} 标准化后的子任务数组
+   */
+  async normalizeSubtaskPathsBatch(subtasks) {
+    if (!Array.isArray(subtasks)) {
+      return subtasks;
+    }
+
+    const normalizedSubtasks = [];
+    for (const subtask of subtasks) {
+      normalizedSubtasks.push(await this.normalizeSubtaskPaths(subtask));
+    }
+
+    return normalizedSubtasks;
+  }
+
+  /**
+   * 格式化实现计划以供 Prompt 使用
+   * @param {Object} implementationPlan - 实现计划对象
+   * @returns {string} 格式化后的实现计划字符串
+   */
+  formatImplementationPlanForPrompt(implementationPlan) {
+    if (!implementationPlan) return '';
+
+    const parts = [];
+
+    parts.push('## IMPLEMENTATION PLAN');
+    parts.push('');
+
+    if (implementationPlan.tech_stack) {
+      parts.push(`### Tech Stack: ${implementationPlan.tech_stack.join(', ')}`);
+      parts.push('');
+    }
+
+    if (implementationPlan.architecture_patterns) {
+      parts.push(`### Architecture Patterns: ${implementationPlan.architecture_patterns.join(', ')}`);
+      parts.push('');
+    }
+
+    if (implementationPlan.code_standards) {
+      parts.push(`### Code Standards: ${implementationPlan.code_standards.join(', ')}`);
+      // 添加更明确的约束说明
+      parts.push('### Code Standards (IMPORTANT):');
+      implementationPlan.code_standards.forEach(standard => {
+        if (standard === 'no_empty_imports') {
+          parts.push('- NO EMPTY IMPORTS: 禁止空的导入语句，如 `import { } from "module"` 或只有路径没有导入任何内容');
+        } else if (standard === 'use_relative_paths') {
+          parts.push('- USE RELATIVE PATHS: 必须使用相对路径，如 `./components/Button` 或 `../utils/helper`，禁止使用绝对路径');
+        } else if (standard === 'no_absolute_paths') {
+          parts.push('- NO ABSOLUTE PATHS: 禁止使用本地绝对路径，如 `C:/Users/...`、`D:/Projects/...` 或 `C:\\...`');
+        } else {
+          parts.push(`- ${standard}`);
+        }
+      });
+      parts.push('');
+    }
+
+    if (implementationPlan.path_conventions) {
+      // 支持数组和对象两种格式
+      let pathStr = '';
+      if (Array.isArray(implementationPlan.path_conventions)) {
+        pathStr = implementationPlan.path_conventions.join(', ');
+      } else if (typeof implementationPlan.path_conventions === 'object') {
+        // 对象格式: {files: "kebab-case", components: "PascalCase"}
+        pathStr = Object.entries(implementationPlan.path_conventions)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ');
+      }
+      if (pathStr) {
+        parts.push(`### Path Conventions: ${pathStr}`);
+        parts.push('');
+      }
+    }
+
+    if (implementationPlan.dependencies) {
+      parts.push(`### Dependencies: ${implementationPlan.dependencies.join(', ')}`);
+      parts.push('');
+    }
+
+    if (implementationPlan.best_practices) {
+      parts.push('### Best Practices (MUST FOLLOW):');
+      implementationPlan.best_practices.forEach(practice => {
+        // 对关键实践添加强调
+        if (practice.includes('不要生成其他文件') || practice.includes('只生成')) {
+          parts.push(`- ⚠️ ${practice}`);
+        } else {
+          parts.push(`- ${practice}`);
+        }
+      });
+      parts.push('');
+    }
+
+    if (implementationPlan.considerations) {
+      parts.push('### Considerations:');
+      implementationPlan.considerations.forEach(consideration => {
+        parts.push(`- ${consideration}`);
+      });
+      parts.push('');
+    }
+
+    if (parts.length <= 2) { // Only has header and empty line
+      return '';
+    }
+
+    return parts.join('\n');
+  }
+}
+
+module.exports = PromptGenerator;
+module.exports.EnhancedSubtask = EnhancedSubtask;

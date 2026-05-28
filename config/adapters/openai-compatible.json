@@ -1,0 +1,33 @@
+{
+  "$comment": "OpenAI 兼容格式适配器 - 用于 DeepSeek、阿里云、MiniMax(非Anthropic格式) 等",
+  "name": "openai-compatible",
+  "request": {
+    "format": "openai",
+    "endpoint": "/v1/chat/completions",
+    "contentField": "messages",
+    "modelField": "model",
+    "authType": "bearer",
+    "authHeader": "Authorization",
+    "requiredHeaders": {
+      "Content-Type": "application/json"
+    },
+    "optionalParams": ["temperature", "max_tokens", "top_p", "stop", "stream", "tools", "tool_choice"]
+  },
+  "response": {
+    "format": "openai",
+    "statusField": "ok",
+    "contentPath": "choices[0].message.content",
+    "thinkingPatterns": [
+      "<thinking>",
+      "<think>",
+      "<reasoning>",
+      "<thought>",
+      "<analysis>"
+    ],
+    "usageFields": {
+      "input": "usage.prompt_tokens",
+      "output": "usage.completion_tokens",
+      "total": "usage.total_tokens"
+    }
+  }
+}

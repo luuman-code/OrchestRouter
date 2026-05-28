@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请帮我开发一个AI智能日程表应用。该应用应该具备以下功能：1. 用户可以添加、编辑、删除日程 2. AI助手可以根据用户习惯优化日程安排 3. 提供提醒功能 4. 友好的用户界面。请创建一个完整可运行的应用。"
+    }
+  ],
+  "model": "qwen3.5-plus",
+  "project": "ai_intelligent_schedule_planner",
+  "outputDir": "C:\\\\Users\\\\LWB\\\\Desktop\\\\AI intelligent schedule planner",
+  "maxTokens": 4000
+}

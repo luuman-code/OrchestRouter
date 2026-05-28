@@ -1,0 +1,44 @@
+{
+  "$comment": "【已废弃】此配置文件不再使用，请使用 config/config.json",
+  "orchestrator": {
+    "port": 3458,
+    "ccrRouterUrl": "http://127.0.0.1:3456",
+    "debug": false,
+    "autoOrchestrate": true,
+    "orchestrationThreshold": 0.7,
+    "maxConcurrency": 5,
+    "timeout": 300000,
+    "decomposer": {
+      "llm": {
+        "enabled": true,
+        "base_url": "http://localhost:11434",
+        "model": "qwen2.5:3b",
+        "timeout": 60000,
+        "retry_attempts": 2,
+        "temperature": 0.1,
+        "max_concurrency": 3,
+        "max_batch_size": 10
+      }
+    },
+    "taskComplexityAnalysis": {
+      "enabled": true,
+      "useLLM": true,
+      "confidenceThresholds": {
+        "high": 0.8,
+        "medium": 0.5
+      },
+      "llmConfig": {
+        "base_url": "http://localhost:11434",
+        "model": "qwen2.5:3b",
+        "timeout": 30000,
+        "temperature": 0.1,
+        "maxTokens": 500
+      },
+      "fallback": {
+        "onLLMError": "rule_based",
+        "cacheEnabled": true,
+        "cacheExpiration": 3600000
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "orchestrator-mcp": {
+      "endpoint": {
+        "uri": "http://localhost:3459",
+        "kind": "http"
+      },
+      "authorization": {
+        "kind": "none"
+      },
+      "name": "Orchestrator MCP Adapter",
+      "description": "Connects Claude Code to the orchestration server",
+      "capabilities": {
+        "tools": {
+          "list": {
+            "pollInterval": "60s"
+          }
+        },
+        "resources": {
+          "list": {
+            "pollInterval": "60s"
+          },
+          "get": {}
+        }
+      }
+    }
+  }
+}

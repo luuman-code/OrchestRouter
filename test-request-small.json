@@ -1,0 +1,32 @@
+{
+  "session_id": null,
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Vite"],
+    "contract_first": true,
+    "shared_context": {
+      "type_source": "src/types/index.ts",
+      "file_naming": {
+        "forbidden_files": ["UserService.ts"]
+      },
+      "import_rules": [
+        "导入时不带 .ts/.tsx 后缀",
+        "使用相对路径"
+      ]
+    },
+    "best_practices": [
+      "只生成 deliverables 指定的文件",
+      "不要生成测试文件",
+      "返回完整代码"
+    ]
+  },
+  "task": {
+    "title": "测试任务",
+    "description": "测试",
+    "requirement": "创建一个简单的 React 组件",
+    "deliverables": [
+      {"description": "类型定义", "filePath": "src/types/index.ts", "type": "logic", "integrationHints": {"targetFile": "src/types/index.ts"}},
+      {"description": "主入口", "filePath": "src/main.tsx", "type": "logic", "integrationHints": {"targetFile": "src/main.tsx"}},
+      {"description": "App组件", "filePath": "src/App.tsx", "type": "ui", "integrationHints": {"targetFile": "src/App.tsx"}}
+    ]
+  }
+}

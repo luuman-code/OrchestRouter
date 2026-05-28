@@ -1,0 +1,42 @@
+{
+  "name": "orchestrouter-decomposer",
+  "version": "4.0.0",
+  "description": "弹性任务分解器 - 将复杂任务分解为可管理的子任务",
+  "main": "./src/decomposer/index.js",
+  "scripts": {
+    "test": "node ./tests/decomposer.test.js",
+    "dev": "node ./examples/simple-example.js",
+    "test-config": "node ./config/test-config-modules.js",
+    "restore-config": "node ./config/restore-config.js",
+    "backup-config": "copy ./config/config.json ./config/config.json.backup",
+    "validate-config": "node -e \"console.log('Validating config...'); JSON.parse(require('fs').readFileSync('./config/config.json')); console.log('Config is valid JSON')\""
+  },
+  "keywords": [
+    "task",
+    "decomposer",
+    "orchestration",
+    "router"
+  ],
+  "author": "OrchestRouter Team",
+  "license": "MIT",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.14.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "js-yaml": "^4.1.1",
+    "lru-cache": "^11.2.7",
+    "mongoose": "^9.4.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1"
+  }
+}

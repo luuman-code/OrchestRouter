@@ -1,0 +1,1175 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "电商平台 API",
+    "description": "完整的电商平台 API 规范，包含用户认证、商品浏览、购物车、订单管理等功能",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "email": "support@ecommerce.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "本地开发服务器"
+    },
+    {
+      "url": "https://api.ecommerce.com/v1",
+      "description": "生产环境"
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "用户认证相关接口" },
+    { "name": "Products", "description": "商品浏览相关接口" },
+    { "name": "Cart", "description": "购物车相关接口" },
+    { "name": "Orders", "description": "订单管理相关接口" }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "用户注册",
+        "description": "创建新用户账号",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "用户已存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "用户登录",
+        "description": "使用邮箱和密码登录",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "认证失败",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "用户登出",
+        "description": "退出当前登录状态",
+        "operationId": "logout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "登出成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "获取当前用户信息",
+        "description": "返回当前登录用户的信息",
+        "operationId": "getCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "用户信息",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "获取商品列表",
+        "description": "支持分页、分类筛选、价格排序、关键词搜索",
+        "operationId": "getProducts",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码，从1开始",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "分类筛选",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "排序方式: price_asc, price_desc, newest, name",
+            "schema": {
+              "type": "string",
+              "enum": ["price_asc", "price_desc", "newest", "name"]
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键词",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格筛选",
+            "schema": { "type": "number", "minimum": 0 }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格筛选",
+            "schema": { "type": "number", "minimum": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "商品列表",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProductListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/categories": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "获取商品分类列表",
+        "description": "返回所有商品分类",
+        "operationId": "getCategories",
+        "responses": {
+          "200": {
+            "description": "分类列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Category" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "获取商品详情",
+        "description": "根据ID获取单个商品的详细信息",
+        "operationId": "getProductById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "商品ID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "商品详情",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProductDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "商品不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart": {
+      "get": {
+        "tags": ["Cart"],
+        "summary": "获取购物车",
+        "description": "获取当前用户的购物车内容",
+        "operationId": "getCart",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "购物车内容",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CartResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart/items": {
+      "post": {
+        "tags": ["Cart"],
+        "summary": "添加商品到购物车",
+        "description": "向购物车中添加商品",
+        "operationId": "addCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddCartItemRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "添加成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CartResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart/items/{id}": {
+      "put": {
+        "tags": ["Cart"],
+        "summary": "更新购物车商品数量",
+        "description": "修改购物车中某商品的数量",
+        "operationId": "updateCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "购物车项ID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCartItemRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CartResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "购物车项不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Cart"],
+        "summary": "从购物车移除商品",
+        "description": "删除购物车中的某商品",
+        "operationId": "removeCartItem",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "购物车项ID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CartResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "购物车项不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "获取订单列表",
+        "description": "获取当前用户的所有订单，支持分页和状态筛选",
+        "operationId": "getOrders",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "订单状态筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "paid", "shipped", "delivered", "cancelled"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "订单列表",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderListResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Orders"],
+        "summary": "创建订单",
+        "description": "基于购物车创建新订单",
+        "operationId": "createOrder",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "订单创建成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "获取订单详情",
+        "description": "根据ID获取单个订单的详细信息",
+        "operationId": "getOrderById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "订单详情",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "订单不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "使用 JWT Bearer Token 进��认证"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "错误码",
+            "example": "USER_ALREADY_EXISTS"
+          },
+          "message": {
+            "type": "string",
+            "description": "错误信息",
+            "example": "该邮箱已被注册"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true],
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "成功消息",
+            "example": "操作成功"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "name"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "用户邮箱",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 128,
+            "description": "用户密码",
+            "example": "password123"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "用户昵称",
+            "example": "张三"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "用户邮箱",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "用户密码",
+            "example": "password123"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": ["user", "token"],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT 访问令牌",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "required": ["user"],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "email", "name", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "用户唯一标识",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "用户邮箱",
+            "example": "user@example.com"
+          },
+          "name": {
+            "type": "string",
+            "description": "用户昵称",
+            "example": "张三"
+          },
+          "avatar": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "用户头像URL",
+            "example": "https://cdn.example.com/avatars/default.png"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "注册时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "required": ["id", "name", "slug"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "分类ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "分类名称",
+            "example": "电子产品"
+          },
+          "slug": {
+            "type": "string",
+            "description": "分类别名",
+            "example": "electronics"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "分类描述"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "分类图片"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "required": ["id", "name", "price", "stock", "categoryId", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "商品ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "商品名称",
+            "example": "iPhone 15 Pro"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "商品描述"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "description": "商品价格",
+            "example": 6999.00
+          },
+          "originalPrice": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "description": "原价（用于展示折扣）",
+            "example": 7999.00
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "库存数量",
+            "example": 100
+          },
+          "images": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" },
+            "description": "商品图片URL列表"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "所属分类ID"
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "分类名称"
+          },
+          "rating": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 5,
+            "nullable": true,
+            "description": "评分",
+            "example": 4.5
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "评价数量"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "是否上架",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "ProductListResponse": {
+        "type": "object",
+        "required": ["products", "pagination"],
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Product" },
+            "description": "商品列表"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "ProductDetailResponse": {
+        "type": "object",
+        "required": ["product"],
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/Product"
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "required": ["page", "limit", "total", "totalPages"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "当前页码"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "每页数量"
+          },
+          "total": {
+            "type": "integer",
+            "description": "总记录数"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "总页数"
+          }
+        }
+      },
+      "CartItem": {
+        "type": "object",
+        "required": ["id", "productId", "name", "price", "quantity", "image"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "购物车项ID"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "商品ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "商品名称"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "商品单价"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "购买数量"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "description": "商品缩略图"
+          },
+          "stock": {
+            "type": "integer",
+            "description": "当前库存"
+          }
+        }
+      },
+      "CartResponse": {
+        "type": "object",
+        "required": ["items", "totalQuantity", "totalAmount"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CartItem" },
+            "description": "购物车商品列表"
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "description": "商品总数量"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "float",
+            "description": "商品总金额"
+          }
+        }
+      },
+      "AddCartItemRequest": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "商品ID"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "数量"
+          }
+        }
+      },
+      "UpdateCartItemRequest": {
+        "type": "object",
+        "required": ["quantity"],
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "新数量"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": ["id", "productId", "name", "price", "quantity", "image"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "订单项ID"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "商品ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "商品名称"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "购买时单价"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "购买数量"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "description": "商品图片"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "userId", "items", "totalAmount", "status", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "订单ID"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "用户ID"
+          },
+          "orderNumber": {
+            "type": "string",
+            "description": "订单编号",
+            "example": "ORD-20240115-0001"
+          },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderItem" },
+            "description": "订单��品列表"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "float",
+            "description": "订单总金额"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "paid", "shipped", "delivered", "cancelled"],
+            "description": "订单状态"
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "description": "支付方式",
+            "example": "alipay"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "支付时间"
+          },
+          "shippedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "发货时间"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "送达时间"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": ["recipientName", "phone", "province", "city", "district", "detail"],
+        "properties": {
+          "recipientName": {
+            "type": "string",
+            "description": "收货人姓名",
+            "example": "张三"
+          },
+          "phone": {
+            "type": "string",
+            "description": "联系电话",
+            "example": "13800138000"
+          },
+          "province": {
+            "type": "string",
+            "description": "省份",
+            "example": "广东省"
+          },
+          "city": {
+            "type": "string",
+            "description": "城市",
+            "example": "深圳市"
+          },
+          "district": {
+            "type": "string",
+            "description": "区/县",
+            "example": "南山区"
+          },
+          "detail": {
+            "type": "string",
+            "description": "详细地址",
+            "example": "科技园路1号创新大厦1001室"
+          },
+          "zipCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "邮编",
+            "example": "518000"
+          }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": ["shippingAddress"],
+        "properties": {
+          "shippingAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "支付方式",
+            "example": "alipay"
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "description": "订单备注"
+          }
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "required": ["order"],
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          }
+        }
+      },
+      "OrderListResponse": {
+        "type": "object",
+        "required": ["orders", "pagination"],
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Order" },
+            "description": "订单列表"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      }
+    }
+  }
+}

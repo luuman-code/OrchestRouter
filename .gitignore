@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+*.log.*
+
+# Temporary files
+nul/
+temp.txt
+*.backup
+
+# Cache directories
+.cache/
+.claude/
+
+# Output and generated files
+output/
+output.json
+sessions/
+responses/
+detailed-api-logs/
+metrics/
+test-results/
+plans/
+issue/
+
+# Test outputs
+test-results/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/

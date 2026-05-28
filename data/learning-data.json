@@ -1,0 +1,311 @@
+{
+  "feedbackHistory": [
+    {
+      "taskId": "historical-task-0",
+      "taskType": "ui",
+      "modelId": "gemini-2.0-flash",
+      "qualityMetrics": {
+        "overallScore": 0.9199999999999999,
+        "codeQualityScore": 0.9199999999999999,
+        "performanceScore": 0.9199999999999999,
+        "accuracyScore": 0.9199999999999999,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_d761jk908"
+    },
+    {
+      "taskId": "historical-task-1",
+      "taskType": "ui",
+      "modelId": "claude-opus-4-6",
+      "qualityMetrics": {
+        "overallScore": 0.8800000000000001,
+        "codeQualityScore": 0.8800000000000001,
+        "performanceScore": 0.8800000000000001,
+        "accuracyScore": 0.8800000000000001,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_zqxsqrpbf"
+    },
+    {
+      "taskId": "historical-task-2",
+      "taskType": "ui",
+      "modelId": "gpt-4o-mini",
+      "qualityMetrics": {
+        "overallScore": 0.85,
+        "codeQualityScore": 0.85,
+        "performanceScore": 0.85,
+        "accuracyScore": 0.85,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_agspcvq3k"
+    },
+    {
+      "taskId": "historical-task-3",
+      "taskType": "ui",
+      "modelId": "gemini-2.0-flash",
+      "qualityMetrics": {
+        "overallScore": 0.9199999999999999,
+        "codeQualityScore": 0.9199999999999999,
+        "performanceScore": 0.9199999999999999,
+        "accuracyScore": 0.9199999999999999,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_nhetdk4xr"
+    },
+    {
+      "taskId": "historical-task-4",
+      "taskType": "ui",
+      "modelId": "claude-opus-4-6",
+      "qualityMetrics": {
+        "overallScore": 0.8800000000000001,
+        "codeQualityScore": 0.8800000000000001,
+        "performanceScore": 0.8800000000000001,
+        "accuracyScore": 0.8800000000000001,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_vqd2u2eq6"
+    },
+    {
+      "taskId": "historical-task-5",
+      "taskType": "ui",
+      "modelId": "gpt-4o-mini",
+      "qualityMetrics": {
+        "overallScore": 0.85,
+        "codeQualityScore": 0.85,
+        "performanceScore": 0.85,
+        "accuracyScore": 0.85,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_jz5ar6om6"
+    },
+    {
+      "taskId": "historical-task-6",
+      "taskType": "ui",
+      "modelId": "gemini-2.0-flash",
+      "qualityMetrics": {
+        "overallScore": 0.9199999999999999,
+        "codeQualityScore": 0.9199999999999999,
+        "performanceScore": 0.9199999999999999,
+        "accuracyScore": 0.9199999999999999,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_ezrhlazly"
+    },
+    {
+      "taskId": "historical-task-7",
+      "taskType": "ui",
+      "modelId": "claude-opus-4-6",
+      "qualityMetrics": {
+        "overallScore": 0.8800000000000001,
+        "codeQualityScore": 0.8800000000000001,
+        "performanceScore": 0.8800000000000001,
+        "accuracyScore": 0.8800000000000001,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_8fjua7vtb"
+    },
+    {
+      "taskId": "historical-task-8",
+      "taskType": "ui",
+      "modelId": "gpt-4o-mini",
+      "qualityMetrics": {
+        "overallScore": 0.85,
+        "codeQualityScore": 0.85,
+        "performanceScore": 0.85,
+        "accuracyScore": 0.85,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_6s8cod99b"
+    },
+    {
+      "taskId": "historical-task-9",
+      "taskType": "ui",
+      "modelId": "gemini-2.0-flash",
+      "qualityMetrics": {
+        "overallScore": 0.9199999999999999,
+        "codeQualityScore": 0.9199999999999999,
+        "performanceScore": 0.9199999999999999,
+        "accuracyScore": 0.9199999999999999,
+        "taskComplexity": 0.5
+      },
+      "additionalContext": {
+        "subtask": {
+          "type": "ui"
+        }
+      },
+      "timestamp": "2026-03-28T08:03:37.985Z",
+      "id": "fb_1774685017985_wk0nr95z4"
+    }
+  ],
+  "modelPerformanceByType": {
+    "ui-gemini-2.0-flash": {
+      "modelId": "gemini-2.0-flash",
+      "taskType": "ui",
+      "totalWeightedScore": 3.6799999999999997,
+      "totalWeightedCount": 4,
+      "adjustedAvgScore": 0.9199999999999999,
+      "sampleCount": 4,
+      "confidence": 0.42188758248682,
+      "lastUpdated": "2026-03-28T08:03:37.985Z",
+      "minScore": 0.9199999999999999,
+      "maxScore": 0.9199999999999999
+    },
+    "ui-claude-opus-4-6": {
+      "modelId": "claude-opus-4-6",
+      "taskType": "ui",
+      "totalWeightedScore": 2.6400000000000006,
+      "totalWeightedCount": 3,
+      "adjustedAvgScore": 0.8800000000000002,
+      "sampleCount": 3,
+      "confidence": 0.37725887222397814,
+      "lastUpdated": "2026-03-28T08:03:37.985Z",
+      "minScore": 0.8800000000000001,
+      "maxScore": 0.8800000000000001
+    },
+    "ui-gpt-4o-mini": {
+      "modelId": "gpt-4o-mini",
+      "taskType": "ui",
+      "totalWeightedScore": 2.55,
+      "totalWeightedCount": 3,
+      "adjustedAvgScore": 0.85,
+      "sampleCount": 3,
+      "confidence": 0.37725887222397814,
+      "lastUpdated": "2026-03-28T08:03:37.985Z",
+      "minScore": 0.85,
+      "maxScore": 0.85
+    }
+  },
+  "performanceWindows": {
+    "ui-gemini-2.0-flash": [
+      {
+        "score": 0.9199999999999999,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.9199999999999999,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.9199999999999999,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.9199999999999999,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      }
+    ],
+    "ui-claude-opus-4-6": [
+      {
+        "score": 0.8800000000000001,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.8800000000000001,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.8800000000000001,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      }
+    ],
+    "ui-gpt-4o-mini": [
+      {
+        "score": 0.85,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.85,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      },
+      {
+        "score": 0.85,
+        "timestamp": "2026-03-28T08:03:37.985Z",
+        "complexity": 0.5
+      }
+    ]
+  },
+  "bayesianData": {
+    "ui-gemini-2.0-flash": {
+      "alpha": 4.68,
+      "beta": 1.3200000000000003,
+      "sampleCount": 4,
+      "lastUpdated": "2026-03-28T08:03:37.985Z"
+    },
+    "ui-claude-opus-4-6": {
+      "alpha": 3.6400000000000006,
+      "beta": 1.3599999999999997,
+      "sampleCount": 3,
+      "lastUpdated": "2026-03-28T08:03:37.985Z"
+    },
+    "ui-gpt-4o-mini": {
+      "alpha": 3.5500000000000003,
+      "beta": 1.4499999999999997,
+      "sampleCount": 3,
+      "lastUpdated": "2026-03-28T08:03:37.985Z"
+    }
+  },
+  "timestamp": "2026-03-28T08:03:37.985Z"
+}

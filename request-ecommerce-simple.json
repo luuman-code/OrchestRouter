@@ -1,0 +1,108 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express"],
+    "contract_first": true,
+    "shared_context": {
+      "project_name": "E-commerce Platform",
+      "description": "现代化电商平台"
+    },
+    "conflict_sensitive_groups": [
+      {
+        "priority": 100,
+        "name": "类型定义组",
+        "files": ["types/index.ts"],
+        "mergeMode": "selected_only"
+      },
+      {
+        "priority": 90,
+        "name": "构建配置组",
+        "files": ["package.json", "tsconfig.json"],
+        "mergeMode": "merge_only"
+      },
+      {
+        "priority": 80,
+        "name": "后端入口组",
+        "files": ["server/index.ts"],
+        "mergeMode": "selected_only"
+      },
+      {
+        "priority": 60,
+        "name": "前端核心层",
+        "files": ["src/main.tsx", "src/App.tsx"],
+        "mergeMode": "merge_only"
+      },
+      {
+        "priority": 50,
+        "name": "前端页面层",
+        "files": ["src/pages/Home.tsx", "src/pages/Products.tsx", "src/pages/Cart.tsx"],
+        "mergeMode": "merge_only"
+      },
+      {
+        "priority": 40,
+        "name": "前端组件层",
+        "files": ["src/components/*.tsx"],
+        "mergeMode": "merge_only"
+      }
+    ]
+  },
+  "task": {
+    "title": "E-commerce Platform",
+    "requirement": "开发一个电商平台，包含用户认证、商品浏览、购物车功能",
+    "deliverables": [
+      {
+        "description": "TypeScript 类型定义",
+        "filePath": "types/index.ts",
+        "type": "logic",
+        "integrationHints": {}
+      },
+      {
+        "description": "项目配置文件",
+        "filePath": "package.json",
+        "type": "logic",
+        "integrationHints": {"dependsOn": ["types/index.ts"]}
+      },
+      {
+        "description": "后端服务器入口",
+        "filePath": "server/index.ts",
+        "type": "api",
+        "integrationHints": {"dependsOn": ["types/index.ts"]}
+      },
+      {
+        "description": "前端入口",
+        "filePath": "src/main.tsx",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["types/index.ts"]}
+      },
+      {
+        "description": "前端根组件",
+        "filePath": "src/App.tsx",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["src/main.tsx"]}
+      },
+      {
+        "description": "首页",
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["src/App.tsx"]}
+      },
+      {
+        "description": "商品页",
+        "filePath": "src/pages/Products.tsx",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["src/App.tsx"]}
+      },
+      {
+        "description": "购物车页",
+        "filePath": "src/pages/Cart.tsx",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["src/App.tsx"]}
+      },
+      {
+        "description": "HTML入口",
+        "filePath": "index.html",
+        "type": "ui",
+        "integrationHints": {"dependsOn": ["src/main.tsx"]}
+      }
+    ]
+  }
+}

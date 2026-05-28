@@ -1,0 +1,73 @@
+{
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js"],
+    "contract_first": true,
+    "shared_context": {},
+    "best_practices": [],
+    "conflict_sensitive_groups": [
+      {
+        "priority": 100,
+        "group_name": "类型定义组",
+        "files": ["types/index.ts"],
+        "mergeMode": "selected_only"
+      },
+      {
+        "priority": 90,
+        "group_name": "构建配置组",
+        "files": ["package.json", "vite.config.js"],
+        "mergeMode": "all"
+      },
+      {
+        "priority": 60,
+        "group_name": "前端核心层",
+        "files": ["src/App.tsx", "src/main.tsx", "src/api.ts"],
+        "mergeMode": "all"
+      },
+      {
+        "priority": 50,
+        "group_name": "前端页面层",
+        "files": ["src/pages/Home.tsx"],
+        "mergeMode": "all"
+      },
+      {
+        "priority": 40,
+        "group_name": "前端组件层",
+        "files": ["src/components/Header.tsx"],
+        "mergeMode": "all"
+      }
+    ]
+  },
+  "task": {
+    "title": "测试任务",
+    "requirement": "生成 deliverables 列表中指定的文件",
+    "deliverables": [
+      {
+        "description": "Test API service",
+        "filePath": "src/services/api.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "src/services/api.ts",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "Test App component",
+        "filePath": "src/App.tsx",
+        "type": "ui",
+        "integrationHints": {
+          "targetFile": "src/App.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "description": "Test utility",
+        "filePath": "src/utils/test.ts",
+        "type": "logic",
+        "integrationHints": {
+          "targetFile": "src/utils/test.ts",
+          "dependsOn": []
+        }
+      }
+    ]
+  }
+}
