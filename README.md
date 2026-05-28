@@ -81,7 +81,11 @@
 
 ## 快速开始
 
-### 安装依赖
+### 推荐：使用 Claude Code Skill
+
+**强烈推荐使用 Claude Code Skill 来调用编排器**，这提供了完整的请求文件编写指南和模板参考。
+
+#### 1. 安装依赖
 
 ```bash
 # 根目录依赖
@@ -91,22 +95,56 @@ npm install
 cd ui && npm install
 ```
 
-### 启动服务
+#### 2. 启动服务
 
 ```bash
-# 方式 1：一键启动所有服务（推荐）
+# 一键启动所有服务（推荐）
 start-all-servers.bat
+```
 
-# 方式 2：分别启动
-# 终端 1：启动编排服务器（端口 3458）
+#### 3. 在 Claude Code 中使用
+
+```
+/orchestrator
+```
+
+参考 `.claude/skills/orchestrator/skill.md` 中的指南创建请求文件，然后使用 curl 发送请求：
+
+```bash
+curl -s -X POST http://127.0.0.1:3458/v1/orchestrate-tool-calls \
+  -H "Content-Type: application/json" \
+  -d @"请求文件路径.json" \
+  --max-time 600 \
+  -o 输出文件路径.json
+```
+
+---
+
+### 备选：手动使用
+
+如果不使用 Claude Code Skill，也可以手动调用：
+
+#### 安装依赖
+
+```bash
+npm install
+cd ui && npm install
+```
+
+#### 启动服务
+
+```bash
 start-orchestrator.bat
-# 或手动启动
-node ./src/orchestrator/index.js
-
-# 终端 2：启动 UI 配置中心（端口 5174）
 start-ui.bat
-# 或手动启动
-cd ui && npm run dev
+```
+
+#### 手动发送请求
+
+```bash
+curl -s -X POST http://127.0.0.1:3458/v1/orchestrate-tool-calls \
+  -H "Content-Type: application/json" \
+  -d @"请求文件路径.json" \
+  --max-time 600
 ```
 
 **服务地址：**
@@ -145,11 +183,20 @@ console.log(subTasks);
 
 ## Claude Code Skill 集成
 
-OrchestRouter 提供了 Claude Code Skill 文件，可以直接在 Claude Code 中使用。
+> **强烈推荐使用此方式调用编排器**
+
+OrchestRouter 提供了 Claude Code Skill 文件，可以直接在 Claude Code 中使用 `/orchestrator` 命令。
 
 ### Skill 文件位置
 
 `.claude/skills/orchestrator/`
+
+### 为什么推荐使用 Skill？
+
+- **完整的指南**: 包含请求文件编写规范、字段说明、模板参考
+- **模板支持**: 提供多种场景的请求模板，直接修改即可使用
+- **最佳实践**: 内置常见问题解答和校验规则
+- **简化调用**: 只需执行 `/orchestrator` 即可获得详细指导
 
 ### Skill 文件说明
 
