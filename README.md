@@ -16,7 +16,23 @@
                     │  Orchestrator    │
                     │   编排服务器      │
                     └──────────────────┘
+                               │
+                    ┌──────────────────┐
+                    │   UI Config      │
+                    │   配置中心        │
+                    │   (端口 5174)    │
+                    └──────────────────┘
 ```
+
+### 6. UI Config Center (配置中心)
+`ui/`
+
+- **可视化配置管理**: Web 界面集中管理所有配置项
+- **实时日志查看**: 集成增强日志系统，支持筛选、搜索、自动刷新
+- **模型提供商管理**: 添加/删除 Provider，配置 API 端点和密钥
+- **路由规则配置**: 设置不同场景下的模型路由策略
+- **成本控制面板**: 设置日预算、单任务成本限制等
+- **执行器监控**: 配置并发执行、重试策略、速率限制等
 
 ## 核心模块
 
@@ -68,20 +84,34 @@
 ### 安装依赖
 
 ```bash
+# 根目录依赖
 npm install
+
+# UI 配置中心依赖
+cd ui && npm install
 ```
 
-### 启动编排服务器
+### 启动服务
 
 ```bash
-# Windows
-start-orchestrator.bat
+# 方式 1：一键启动所有服务（推荐）
+start-all-servers.bat
 
+# 方式 2：分别启动
+# 终端 1：启动编排服务器（端口 3458）
+start-orchestrator.bat
 # 或手动启动
 node ./src/orchestrator/index.js
+
+# 终端 2：启动 UI 配置中心（端口 5174）
+start-ui.bat
+# 或手动启动
+cd ui && npm run dev
 ```
 
-服务器默认运行在 `http://localhost:3458`
+**服务地址：**
+- 编排服务器: `http://localhost:3458`
+- UI 配置中心: `http://localhost:5174`
 
 ### 单独使用分解器
 
@@ -155,6 +185,10 @@ OrchestRouter/
 │   ├── session/          # 会话管理
 │   ├── metrics/          # 指标收集
 │   └── api/              # REST API
+├── ui/                   # UI 配置中心
+│   ├── src/              # React 组件源码
+│   ├── public/           # 静态资源
+│   └── package.json      # UI 依赖配置
 ├── config/               # 配置文件
 ├── examples/              # 使用示例
 └── tests/                # 测试用例
@@ -179,15 +213,24 @@ OrchestRouter/
 - **容错设计**: 熔断器、重试机制、限流保护
 - **流式响应**: 支持流式 API 响应
 - **增量处理**: 会话级别的增量更新与状态管理
+- **可视化配置中心**: React UI 界面管理所有配置项
+- **实时日志监控**: 集成增强日志系统，支持多级筛选和搜索
 
 ## 依赖技术
 
+### 后端
 - **运行时**: Node.js
 - **Web 框架**: Express
 - **数据库**: MongoDB (mongoose)
 - **HTTP 客户端**: Axios
 - **配置管理**: YAML + JSON
 - **缓存**: LRU Cache
+
+### 前端 UI
+- **框架**: React 19
+- **语言**: TypeScript
+- **构建工具**: Vite
+- **样式**: Tailwind CSS
 
 ## License
 
