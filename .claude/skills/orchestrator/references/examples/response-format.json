@@ -1,0 +1,207 @@
+{
+  "$schema": "./response-format.schema.json",
+  "description": "编排器 API 响应格式说明",
+  "api_endpoints": {
+    "/v1/orchestrate-tool-calls": {
+      "method": "POST",
+      "description": "推荐使用 - 返回工具调用格式",
+      "response_format": "tool_call_format"
+    },
+    "/v1/orchestrate": {
+      "method": "POST",
+      "description": "返回 JSON 格式",
+      "response_format": "json_format"
+    },
+    "/v1/integrate": {
+      "method": "POST",
+      "description": "直接整合执行结果",
+      "response_format": "integrated_format"
+    },
+    "/v1/create-plan": {
+      "method": "POST",
+      "description": "创建实现计划",
+      "response_format": "plan_format"
+    }
+  },
+  "response_formats": {
+    "tool_call_format": {
+      "description": "工具调用格式 - 推荐使用",
+      "structure": {
+        "content": {
+          "type": "array",
+          "description": "工具调用数组",
+          "items": {
+            "type": "tool_use",
+            "properties": {
+              "type": {
+                "type": "string",
+                "value": "tool_use"
+              },
+              "name": {
+                "type": "string",
+                "enum": ["write_file", "read_file", "bash", "etc"]
+              },
+              "input": {
+                "type": "object",
+                "properties": {
+                  "file_path": "string",
+                  "content": "string"
+                }
+              }
+            }
+          }
+        },
+        "session_id": {
+          "type": "string",
+          "description": "会话 ID，后续请求需要使用"
+        },
+        "session_updated": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "number",
+          "description": "协议版本"
+        }
+      },
+      "example": {
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "write_file",
+            "input": {
+              "file_path": "src/App.tsx",
+              "content": "import React from 'react';\n..."
+            }
+          }
+        ],
+        "session_id": "abc123",
+        "session_updated": true,
+        "version": 2
+      }
+    },
+    "json_format": {
+      "description": "JSON 格式 - 非工具调用",
+      "structure": {
+        "results": "array of results",
+        "session_id": "string",
+        "session_updated": "boolean"
+      }
+    },
+    "integrated_format": {
+      "description": "整合后格式 - 直接执行工具调用",
+      "structure": {
+        "executed": "boolean",
+        "results": "array of execution results",
+        "session_id": "string"
+      }
+    },
+    "plan_format": {
+      "description": "计划格式",
+      "structure": {
+        "plan": "object - 实现计划",
+        "session_id": "string"
+      }
+    }
+  },
+  "execution_statistics": {
+    "session_stats": {
+      "cost_usd": {
+        "type": "number",
+        "description": "本次执行消耗（美元）"
+      },
+      "tokens_used": {
+        "type": "number",
+        "description": "使用的 token 数量"
+      }
+    },
+    "summary": {
+      "totalFiles": {
+        "type": "number",
+        "description": "总文件数"
+      },
+      "newFiles": {
+        "type": "number",
+        "description": "新创建文件数"
+      },
+      "modifiedFiles": {
+        "type": "number",
+        "description": "修改文件数"
+      }
+    }
+  },
+  "predicted_issues": {
+    "description": "问题清单预测 - 模型预测可能存在的问题",
+    "output_location": ".orchestrator/issues/001_问题清单.json",
+    "issue_types": {
+      "missing_dependency": {
+        "severity": "high",
+        "description": "引用了未在 deliverables 中定义的文件"
+      },
+      "incomplete_import": {
+        "severity": "high",
+        "description": "导入了不存在的函数或变量"
+      },
+      "type_mismatch": {
+        "severity": "medium",
+        "description": "类型定义不一致"
+      },
+      "circular_dependency": {
+        "severity": "medium",
+        "description": "循环依赖风险"
+      },
+      "missing_context": {
+        "severity": "high",
+        "description": "缺少必要的 Context 或 Provider"
+      }
+    },
+    "severity_levels": {
+      "high": "必须修复，会导致运行时错误",
+      "medium": "建议修复，可能导致警告或不稳定",
+      "low": "可选修复，代码风格或最佳实践建议"
+    },
+    "format": {
+      "task": "string - 任务标题",
+      "timestamp": "string - ISO 时间戳",
+      "files_created": "string[] - 此任务生成的所有文件",
+      "file_issues": {
+        "description": "按文件组织的问题映射",
+        "[filename]": "array - 该文件的问题数组，无问题则为空数组 []"
+      }
+    },
+    "example": {
+      "task": "电商系统",
+      "timestamp": "2026-04-20T12:00:00.000Z",
+      "files_created": ["src/types/index.ts", "src/pages/Cart.tsx"],
+      "file_issues": {
+        "src/pages/Cart.tsx": [
+          {
+            "issue_type": "missing_dependency",
+            "description": "购物车组件依赖 AuthContext，但 AuthContext.tsx 未在 deliverables 中定义",
+            "severity": "high",
+            "suggestion": "在 deliverables 中添加 AuthContext.tsx"
+          }
+        ]
+      }
+    }
+  },
+  "response_file_handling": {
+    "description": "响应文件处理注意事项",
+    "issue": "curl 保存的响应文件可能包含额外的尾部内容",
+    "problem": "响应 JSON 末尾可能附加 HTTP Status: 200 等内容，直接 JSON.parse() 会失败",
+    "solution": "找到 JSON 真正的结束位置 }，只解析该部分",
+    "code_example": {
+      "javascript": "const jsonEnd = content.lastIndexOf('}');\nconst data = JSON.parse(content.substring(0, jsonEnd + 1));"
+    }
+  },
+  "write_file_extraction": {
+    "description": "从响应中提取 write_file 工具调用（推荐使用此脚本）",
+    "script_location": "C:/Users/LWB/OrchestRouter/extract-tool-calls.js",
+    "usage": "node C:/Users/LWB/OrchestRouter/extract-tool-calls.js",
+    "features": [
+      "正确处理 JSON 转义字符（\\n, \\t 等）",
+      "自动清理嵌入的 curl 进度输出",
+      "处理文件内容被 curl 输出截断的情况"
+    ],
+    "javascript": "const fs = require('fs');\nconst path = require('path');\n\nconst RAW_FILE = 'response.json';\nconst OUTPUT_DIR = './output';\n\nconst raw = fs.readFileSync(RAW_FILE, 'utf8');\nconst arrayStart = raw.indexOf('[{\"type\":\"tool_use\"');\n\nif (arrayStart === -1) {\n  console.error('Could not find tool_calls array');\n  process.exit(1);\n}\n\nconst toolUseMarker = '\"name\":\"write_file\"';\nlet searchPos = arrayStart;\nconst results = [];\n\nwhile (true) {\n  const markerPos = raw.indexOf(toolUseMarker, searchPos);\n  if (markerPos === -1) break;\n\n  let objStart = markerPos;\n  while (objStart > 0 && raw[objStart - 1] !== '{') objStart--;\n\n  let depth = 0, inString = false, escape = false, i = objStart, foundEnd = false;\n  while (i < raw.length) {\n    const c = raw[i];\n    if (escape) { escape = false; i++; continue; }\n    if (c === '\\\\') { escape = true; i++; continue; }\n    if (c === '\"') { inString = !inString; i++; continue; }\n    if (!inString) { if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) { foundEnd = true; i++; break; } } }\n    i++;\n  }\n\n  if (!foundEnd) break;\n\n  const toolUseStr = raw.substring(objStart, i);\n  searchPos = i;\n\n  const filePathMatch = toolUseStr.match(/\"file_path\":\"([^\"]+)\"/);\n  if (!filePathMatch) continue;\n  const filePath = filePathMatch[1];\n\n  const contentMatch = toolUseStr.match(/\"content\":\"([\\s\\S]*?)\"(?=,\"language\")/);\n  if (!contentMatch) continue;\n\n  let rawContent = contentMatch[1];\n  rawContent = cleanCurlOutput(rawContent);\n\n  try {\n    const content = JSON.parse('\"' + rawContent + '\"');\n    results.push({ file_path: filePath, content, success: true });\n  } catch (e) {\n    const curlStart = rawContent.indexOf('\\r100  133k');\n    if (curlStart !== -1) {\n      const beforeCorruption = rawContent.substring(0, curlStart);\n      try {\n        const content = JSON.parse('\"' + beforeCorruption + '\"');\n        results.push({ file_path: filePath, content, success: true });\n        continue;\n      } catch (e2) {}\n    }\n    results.push({ file_path: filePath, content: rawContent, success: false, error: e.message });\n  }\n}\n\nif (fs.existsSync(OUTPUT_DIR)) fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });\nfs.mkdirSync(OUTPUT_DIR, { recursive: true });\n\nfor (const result of results) {\n  const fullPath = path.join(OUTPUT_DIR, result.file_path);\n  const dir = path.dirname(fullPath);\n  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });\n  fs.writeFileSync(fullPath, result.content, 'utf8');\n  console.log('Created:', result.file_path);\n}\n\nfunction cleanCurlOutput(content) {\n  const curlCorruptionIdx = content.indexOf('\\r100  133k');\n  if (curlCorruptionIdx === -1) return content;\n\n  const resumePattern = '\\\\n        <input';\n  const resumeIdx = content.indexOf(resumePattern, curlCorruptionIdx);\n\n  if (resumeIdx === -1) return content.substring(0, curlCorruptionIdx);\n\n  const beforeCurl = content.substring(0, curlCorruptionIdx);\n  const afterCorruptionResume = content.substring(resumeIdx + resumePattern.length);\n\n  return beforeCurl + 've\\\\\">\\\\n        <input' + afterCorruptionResume;\n}"
+  }
+}

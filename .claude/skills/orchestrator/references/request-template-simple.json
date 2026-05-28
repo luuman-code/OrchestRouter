@@ -1,0 +1,306 @@
+{
+  "$schema": "./request-template.schema.json",
+  "description": "请求 JSON 模板 - 默认单文件任务模式",
+  "comment": "【推荐】默认单文件任务模式：每个文件单独生成一个子任务。如需启用合并策略，请使用 request-template.json",
+  "implementation_plan": {
+    "tech_stack": ["React", "TypeScript", "Node.js", "Express", "SQLite"],
+    "contract_first": true,
+    "shared_context": {
+      "description": "项目共享上下文信息",
+      "type_source": "src/types/index.ts",
+      "api_config": {
+        "baseURL": "http://localhost:3001/api",
+        "port": 3001
+      },
+      "api_endpoints": [
+        { "path": "/api/auth/register", "method": "POST", "description": "用户注册", "auth": false },
+        { "path": "/api/auth/login", "method": "POST", "description": "用户登录", "auth": false },
+        { "path": "/api/products", "method": "GET", "description": "获取商品列表", "auth": false },
+        { "path": "/api/cart", "method": "GET", "description": "获取购物车", "auth": true },
+        { "path": "/api/orders", "method": "GET", "description": "获取订单列表", "auth": true }
+      ],
+      "import_rules": [
+        "导入时不带 .ts/.tsx 后缀",
+        "使用相对路径 ../ 或 ./",
+        "禁止使用绝对路径"
+      ]
+    },
+    "best_practices": [
+      "只生成 deliverables 指定的文件，不要生成其他文件",
+      "不要生成测试文件（*.test.js, *.spec.js）",
+      "不要生成示例文件或文档文件",
+      "返回完整代码，不要返回占位符或 TODO",
+      "类型定义必须从 shared_context.type_source 指向的文件导入"
+    ]
+  },
+  "task": {
+    "title": "任务标题",
+    "requirement": "简要需求描述（1-2句话）",
+    "deliverables": [
+      {
+        "filePath": "src/types/index.ts",
+        "types": [
+          { "dimension": "category", "value": "general", "weight": 0.7 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "TypeScript类型定义",
+        "integrationHints": {
+          "targetFile": "src/types/index.ts",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "server/database/db.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "数据库初始化和模型定义",
+        "integrationHints": {
+          "targetFile": "server/database/db.ts",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "server/index.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "后端服务入口",
+        "integrationHints": {
+          "targetFile": "server/index.ts",
+          "dependsOn": ["server/database/db.ts"]
+        }
+      },
+      {
+        "filePath": "server/routes/auth.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "用户认证路由",
+        "integrationHints": {
+          "targetFile": "server/routes/auth.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "server/routes/products.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "商品管理路由",
+        "integrationHints": {
+          "targetFile": "server/routes/products.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "server/routes/cart.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "购物车路由",
+        "integrationHints": {
+          "targetFile": "server/routes/cart.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "server/routes/orders.ts",
+        "types": [
+          { "dimension": "category", "value": "backend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.8 }
+        ],
+        "description": "订单管理路由",
+        "integrationHints": {
+          "targetFile": "server/routes/orders.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/App.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "React根组件",
+        "integrationHints": {
+          "targetFile": "src/App.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/main.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "React入口文件",
+        "integrationHints": {
+          "targetFile": "src/main.tsx",
+          "dependsOn": ["src/App.tsx"]
+        }
+      },
+      {
+        "filePath": "src/services/api.ts",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "API服务层",
+        "integrationHints": {
+          "targetFile": "src/services/api.ts",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/Home.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "首页组件",
+        "integrationHints": {
+          "targetFile": "src/pages/Home.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/Login.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "登录页面",
+        "integrationHints": {
+          "targetFile": "src/pages/Login.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/Register.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "注册页面",
+        "integrationHints": {
+          "targetFile": "src/pages/Register.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/ProductList.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "商品列表页",
+        "integrationHints": {
+          "targetFile": "src/pages/ProductList.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/ProductDetail.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "商品详情页",
+        "integrationHints": {
+          "targetFile": "src/pages/ProductDetail.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/Cart.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "购物车页面",
+        "integrationHints": {
+          "targetFile": "src/pages/Cart.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/pages/OrderList.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        ],
+        "description": "订单列表页面",
+        "integrationHints": {
+          "targetFile": "src/pages/OrderList.tsx",
+          "dependsOn": ["src/types/index.ts"]
+        }
+      },
+      {
+        "filePath": "src/components/Header.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "页头导航组件",
+        "integrationHints": {
+          "targetFile": "src/components/Header.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "src/components/ProductCard.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "商品卡片组件",
+        "integrationHints": {
+          "targetFile": "src/components/ProductCard.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "src/components/CartItem.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.6 }
+        ],
+        "description": "购物车项组件",
+        "integrationHints": {
+          "targetFile": "src/components/CartItem.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "src/components/Button.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.5 }
+        ],
+        "description": "按钮组件",
+        "integrationHints": {
+          "targetFile": "src/components/Button.tsx",
+          "dependsOn": []
+        }
+      },
+      {
+        "filePath": "src/components/Input.tsx",
+        "types": [
+          { "dimension": "category", "value": "frontend", "weight": 0.9 },
+          { "dimension": "complexity", "value": "low", "weight": 0.5 }
+        ],
+        "description": "输入框组件",
+        "integrationHints": {
+          "targetFile": "src/components/Input.tsx",
+          "dependsOn": []
+        }
+      }
+    ]
+  }
+}

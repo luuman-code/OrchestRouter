@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "orchestrator": {
+      "command": "node",
+      "args": ["C:\\Users\\LWB\\OrchestRouter\\mcp-server.js"],
+      "cwd": "C:\\Users\\LWB\\OrchestRouter",
+      "env": {
+        "ORCHESTRATOR_HOST": "localhost",
+        "ORCHESTRATOR_PORT": "3458"
+      }
+    }
+  }
+}

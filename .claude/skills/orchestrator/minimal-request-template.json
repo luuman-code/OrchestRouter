@@ -1,0 +1,81 @@
+{
+  // ============================================================
+  // 最小请求模板 - 只需核心必须字段
+  // ============================================================
+  // 完整字段说明：参见 fields-reference.md
+  // 搭积木式构建指南：参见 template-builder-guide.md
+  // 阻塞字段清单：参见 block-fields.md
+  // 可选字段清单：参见 optional-fields.md
+  // ============================================================
+
+  "task": {
+    // ❌ 阻塞字段 - 必须提供
+    "title": "任务标题",
+    "requirement": "简要需求描述",
+
+    // ⚠️ 可选字段 - 建议提供
+    // context: {},           // 上下文信息
+    // priority: "medium",   // 优先级: low, medium, high, critical
+    // deadline: null,       // 截止日期 (ISO 8601)
+    // backgroundInfo: {},   // 背景信息
+
+    // ❌ 阻塞字段 - 必须提供
+    "deliverables": [
+      {
+        // filePath, type, description 为阻塞字段
+        "filePath": "src/pages/Home.tsx",
+        "type": "ui",
+        "description": "首页组件"
+
+        // ⚠️ 以下为可选扩展字段（取消注释即可使用）
+        // "id": "deliverable-1",           // 唯一标识，便于追踪
+        // "priority": "medium",            // 优先级
+        // "pathConfidence": 0.9,           // 路径置信度 (0-1)
+        //
+        // // 多维度类型标注 - 影响任务调度
+        // "types": [
+        //   { "dimension": "category", "value": "frontend", "weight": 0.8 },
+        //   { "dimension": "complexity", "value": "medium", "weight": 0.7 }
+        // ],
+        //
+        // // 文件级依赖 - 影响执行顺序
+        // "dependencies": ["src/components/Button.tsx"],
+        //
+        // // 整合提示 - 传递给整合器的额外指令
+        // "integrationHints": {
+        //   "dependsOn": [],                // 依赖的任务 ID
+        //   "mergeGroupId": null,           // 合并组 ID
+        //   "mergeStrategy": "overwrite",   // 合并策略: overwrite, append
+        //   "region": null,                 // 区域更新规格（用于增量修改）
+        //   "targetFiles": null            // 多文件输出目标
+        // }
+      }
+    ]
+  }
+
+  // ============================================================
+  // 可选扩展字段 - 根据需要取消注释
+  // ============================================================
+
+  // implementation_plan: {
+  //   // 契约与合并策略
+  //   "contract_first": false,             // 启用契约优先模式
+  //   "enable_merge_strategy": false,      // 启用文件合并策略
+  //   "conflict_sensitive_groups": [],     // 冲突敏感文件组
+  //
+  //   // 约束类字段
+  //   "tech_stack": [],                    // 技术栈: ["React", "TypeScript"]
+  //   "architecture_patterns": [],         // 架构模式: ["Microfrontend"]
+  //   "code_standards": [],                // 编码标准
+  //   "path_conventions": {},              // 路径约定
+  //   "dependency_management": [],         // 依赖管理策略
+  //   "api_conventions": {},                // API 约定
+  //   "shared_modules": [],                // 共享模块
+  //   "shared_context": {},                // 共享上下文约束
+  //
+  //   // 指导类字段
+  //   "best_practices": [],                // 最佳实践（显示在 Prompt 中）
+  //   "considerations": [],                // 注意事项
+  //   "design_principles": []              // 设计原则
+  // }
+}

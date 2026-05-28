@@ -1,0 +1,191 @@
+{
+  "$schema": "./field-checklist.schema.json",
+  "description": "机器可读校验规则 - 请求文件编写时逐项检查",
+  "required_fields": [
+    {
+      "path": "implementation_plan.tech_stack",
+      "type": "array",
+      "description": "技术栈列表",
+      "minItems": 1
+    },
+    {
+      "path": "implementation_plan.architecture_patterns",
+      "type": "array",
+      "description": "架构模式"
+    },
+    {
+      "path": "implementation_plan.code_standards",
+      "type": "array",
+      "description": "代码标准",
+      "requiredValues": ["no_empty_imports", "use_relative_paths", "consistent_naming"]
+    },
+    {
+      "path": "implementation_plan.contract_first",
+      "type": "boolean",
+      "description": "启用契约优先模式，自动生成 OpenAPI 规范"
+    },
+    {
+      "path": "implementation_plan.mock_service_layer",
+      "type": "boolean",
+      "description": "启用 Mock 服务层，前端基于假数据开发"
+    },
+    {
+      "path": "implementation_plan.shared_context.type_source",
+      "type": "string",
+      "description": "类型定义文件路径"
+    },
+    {
+      "path": "implementation_plan.shared_context.types",
+      "type": "object",
+      "description": "所有跨文件类型定义（可由契约生成器自动填充）"
+    },
+    {
+      "path": "implementation_plan.shared_context.api_config.baseURL",
+      "type": "string",
+      "description": "API 基础 URL"
+    },
+    {
+      "path": "implementation_plan.shared_context.api_config.port",
+      "type": "number",
+      "description": "API 端口"
+    },
+    {
+      "path": "implementation_plan.shared_context.api_endpoints",
+      "type": "array",
+      "description": "所有 API 端点（可由契约生成器自动填充）",
+      "minItems": 4
+    },
+    {
+      "path": "implementation_plan.shared_context.file_naming",
+      "type": "object",
+      "description": "文件命名约束"
+    },
+    {
+      "path": "implementation_plan.shared_context.import_rules",
+      "type": "array",
+      "description": "导入规则"
+    },
+    {
+      "path": "implementation_plan.best_practices",
+      "type": "array",
+      "description": "最佳实践约束",
+      "minItems": 12
+    },
+    {
+      "path": "implementation_plan.conflict_sensitive_groups",
+      "type": "array",
+      "description": "冲突敏感组"
+    },
+    {
+      "path": "task.title",
+      "type": "string",
+      "description": "任务标题"
+    },
+    {
+      "path": "task.description",
+      "type": "string",
+      "description": "任务描述"
+    },
+    {
+      "path": "task.requirement",
+      "type": "string",
+      "description": "简要需求（1-2句话），详细功能通过deliverables定义，不要罗列功能点"
+    },
+    {
+      "path": "task.deliverables",
+      "type": "array",
+      "description": "交付物列表",
+      "minItems": 1
+    }
+  ],
+  "validation_rules": {
+    "code_standards_must_contain": {
+      "required": ["no_empty_imports", "use_relative_paths", "consistent_naming"],
+      "error": "code_standards 必须包含 no_empty_imports, use_relative_paths, consistent_naming"
+    },
+    "type_source_exists": {
+      "description": "type_source 指向的文件必须在 deliverables 中存在",
+      "check": "deliverables.some(d => d.filePath === shared_context.type_source)"
+    },
+    "api_endpoints_min_count": {
+      "min": 4,
+      "error": "api_endpoints 至少需要4个端点（认证、商品、购物车、订单）"
+    },
+    "best_practices_min_count": {
+      "min": 12,
+      "error": "best_practices 至少需要12条约束"
+    },
+    "conflict_groups_include": {
+      "required_groups": [
+        {
+          "description": "类型定义组",
+          "minPriority": 90,
+          "files_pattern": ["src/types/index.ts"]
+        },
+        {
+          "description": "构建配置组",
+          "minPriority": 80,
+          "files_pattern": ["package.json", "vite.config.js"]
+        }
+      ]
+    },
+    "deliverables_non_empty": {
+      "check": "task.deliverables.length > 0",
+      "error": "deliverables 不能为空"
+    },
+    "api_endpoints_complete": {
+      "description": "电商系统必须包含基础端点",
+      "required": [
+        "POST /api/auth/login",
+        "POST /api/auth/register",
+        "GET /api/products",
+        "GET /api/cart",
+        "POST /api/cart",
+        "GET /api/orders",
+        "POST /api/orders"
+      ]
+    },
+    "forbidden_files_configured": {
+      "description": "必须配置 forbidden_files 防止创建多余服务文件",
+      "check": "shared_context.file_naming.forbidden_files?.length > 0"
+    },
+    "type_pregeneration_recommended": {
+      "description": "建议配置类型预生成，提升类型一致性",
+      "optional_fields": ["_typesDeliverableContent", "shared_context.type_source_content"],
+      "recommendation": "启用类型预生成可避免模型生成不一致的类型定义"
+    },
+    "mock_pregeneration_recommended": {
+      "description": "mock_service_layer=true 时建议配置 generated_mocks",
+      "check": "mock_service_layer === true && generated_mocks === null ? warning : pass",
+      "recommendation": "预生成 Mock 数据可确保前端使用一致的测试数据"
+    }
+  },
+  "conflict_sensitive_groups_rules": {
+    "no_file_overlap": {
+      "description": "同一文件不能出现在多个 conflict_sensitive_groups 中",
+      "check": "所有 groups 中的 files 数组必须互不相交"
+    },
+    "types_must_be_isolated": {
+      "description": "types 文件必须单独成组，不能与其他类型使用文件混合",
+      "required": "types/index.ts 必须在独立组中，mergeMode 为 selected_only"
+    },
+    "circular_deps_same_group": {
+      "description": "循环依赖的文件必须在同一组",
+      "check": "routes 文件之间互相导入时必须在同一 group"
+    },
+    "priority_required": {
+      "description": "每个 group 必须有 priority 字段",
+      "values": "使用 10 的倍数：100, 90, 80, 70, 60, 50, 40"
+    }
+  },
+  "deliverables_rules": {
+    "required_fields": ["description", "filePath", "integrationHints"],
+    "integrationHints_required_fields": ["targetFile"],
+    "targetFile_must_match_filePath": {
+      "description": "integrationHints.targetFile 必须与 filePath 一致"
+    },
+    "dependsOn_must_be_valid": {
+      "description": "dependsOn 中引用的文件必须在 deliverables 中定义"
+    }
+  }
+}

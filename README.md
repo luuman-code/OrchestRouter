@@ -143,6 +143,54 @@ const subTasks = decomposer.decompose(task);
 console.log(subTasks);
 ```
 
+## Claude Code Skill 集成
+
+OrchestRouter 提供了 Claude Code Skill 文件，可以直接在 Claude Code 中使用。
+
+### Skill 文件位置
+
+`.claude/skills/orchestrator/`
+
+### Skill 文件说明
+
+| 文件 | 说明 |
+|------|------|
+| `skill.md` | **主 Skill 文件** - 编排器请求文件编写指南 |
+| `block-fields.md` | 必填字段说明 |
+| `fields-reference.md` | 完整字段参考 |
+| `optional-fields.md` | 可选字段说明 |
+| `template-builder-guide.md` | 模板构建指南 |
+
+### 参考模板
+
+`.claude/skills/orchestrator/references/`
+
+| 文件 | 说明 |
+|------|------|
+| `request-template-simple.json` | **【推荐】简化模板** - 默认单文件任务模式 |
+| `request-template.json` | 完整模板 - 支持合并策略 |
+| `field-checklist.json` | 详细校验规则 |
+| `conflict-groups.json` | 分组规范详细说明 |
+| `best-practices.json` | 最佳实践 |
+| `examples/full-request.json` | 完整电商系统示例 |
+
+### 使用方式
+
+1. 将 `.claude/skills/orchestrator/` 目录复制到项目的 `.claude/skills/` 目录
+2. 在 Claude Code 中使用 `/orchestrator` 命令调用 Skill
+3. 参考模板创建请求 JSON 文件
+4. 使用 `curl` 发送请求到编排服务器
+
+### 发送编排请求
+
+```bash
+curl -s -X POST http://127.0.0.1:3458/v1/orchestrate-tool-calls \
+  -H "Content-Type: application/json" \
+  -d @"请求文件路径.json" \
+  --max-time 600 \
+  -o 输出文件路径.json
+```
+
 ## 配置说明
 
 主配置文件位于 `config/config.json`，包含以下关键配置：
@@ -189,6 +237,15 @@ OrchestRouter/
 │   ├── src/              # React 组件源码
 │   ├── public/           # 静态资源
 │   └── package.json      # UI 依赖配置
+├── .claude/
+│   └── skills/
+│       └── orchestrator/ # Claude Code Skill 文件
+│           ├── skill.md  # Skill 主文件
+│           ├── block-fields.md
+│           ├── fields-reference.md
+│           ├── optional-fields.md
+│           ├── template-builder-guide.md
+│           └── references/  # 请求模板参考
 ├── config/               # 配置文件
 ├── examples/              # 使用示例
 └── tests/                # 测试用例

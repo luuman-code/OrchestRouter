@@ -1,0 +1,135 @@
+{
+  "$schema": "./best-practices.schema.json",
+  "description": "best_practices 完整列表 - 19条必须包含的约束",
+  "version": "4.0",
+  "constraints": [
+    {
+      "id": "bp001",
+      "text": "只生成 deliverables 指定的文件，不要生成其他文件",
+      "category": "范围控制",
+      "rationale": "防止生成多余文件导致冲突或不一致"
+    },
+    {
+      "id": "bp002",
+      "text": "不要生成测试文件（*.test.js, *.spec.js）",
+      "category": "范围控制",
+      "rationale": "测试文件不在本次交付范围内"
+    },
+    {
+      "id": "bp003",
+      "text": "不要生成示例文件或文档文件",
+      "category": "范围控制",
+      "rationale": "示例和文档不属于代码交付物"
+    },
+    {
+      "id": "bp004",
+      "text": "返回完整代码，不要返回占位符或 TODO",
+      "category": "代码质量",
+      "rationale": "完整代码才能直接运行，减少迭代"
+    },
+    {
+      "id": "bp005",
+      "text": "类型定义必须从 shared_context.type_source 指向的文件导入",
+      "category": "类型安全",
+      "rationale": "确保类型一致性，避免重复定义"
+    },
+    {
+      "id": "bp006",
+      "text": "必须生成独立的页面组件文件（pages/ 目录下）",
+      "category": "文件结构",
+      "rationale": "每个页面独立文件便于维护和复用"
+    },
+    {
+      "id": "bp007",
+      "text": "App.tsx 只做路由分发和状态管理，不能包含具体页面JSX逻辑",
+      "category": "关注点分离",
+      "rationale": "App.tsx 作为容器，页面逻辑在各自组件中"
+    },
+    {
+      "id": "bp008",
+      "text": "每个页面组件必须单独一个文件，不能合并到 App.tsx 中",
+      "category": "文件结构",
+      "rationale": "独立文件便于独立开发和测试"
+    },
+    {
+      "id": "bp009",
+      "text": "组件导入名称必须与文件名完全匹配（如 OrderList.tsx 必须导出为 OrderList）",
+      "category": "命名规范",
+      "rationale": "防止 App.tsx 导入不存在的组件名"
+    },
+    {
+      "id": "bp010",
+      "text": "禁止在 deliverables 之外生成组件或创建文件",
+      "category": "范围控制",
+      "rationale": "防止生成未指定的文件导致冲突"
+    },
+    {
+      "id": "bp011",
+      "text": "禁止生成未在 deliverables 中定义的路由、上下文、工具函数或样式文件",
+      "category": "范围控制",
+      "rationale": "所有依赖必须在 deliverables 中显式声明"
+    },
+    {
+      "id": "bp012",
+      "text": "API 调用必须严格遵循 shared_context.api_config 中定义的契约",
+      "category": "API 规范",
+      "rationale": "防止前端调用错误的 HTTP 方法、参数或 URL"
+    },
+    {
+      "id": "bp013",
+      "text": "Node.js/Express 后端 .ts 文件使用 ES Module 时，必须使用 import.meta.url 获取 __dirname",
+      "category": "后端规范",
+      "rationale": "ES Module 中 __dirname 未定义，必须使用 import.meta.url"
+    },
+    {
+      "id": "bp014",
+      "text": "React 组件必须使用 props 接收数据，不自行从 localStorage/Context 读取",
+      "category": "数据流",
+      "rationale": "数据应由父组件通过 props 传递，保持单向数据流"
+    },
+    {
+      "id": "bp015",
+      "text": "服务端启动文件（如 server/index.ts）必须确保依赖目录存在后再启动",
+      "category": "后端规范",
+      "rationale": "防止 data/ 目录不存在导致 sqlite3 打开失败"
+    },
+    {
+      "id": "bp016",
+      "text": "必须根据 tech_stack 生成完整的构建配置文件（package.json, vite.config.js 等）",
+      "category": "配置完整",
+      "rationale": "配置文件是项目运行的基础设施"
+    },
+    {
+      "id": "bp017",
+      "text": "构建配置文件必须集中在 conflict_sensitive_groups 的同一个组中",
+      "category": "配置完整",
+      "rationale": "集中分组确保配置风格一致，避免冲突"
+    },
+    {
+      "id": "bp018",
+      "text": "对于已存在文件的修改，必须使用 startMarker/endMarker 进行增量修改",
+      "category": "增量开发",
+      "rationale": "保持现有代码不变，只修改指定区域"
+    },
+    {
+      "id": "bp019",
+      "text": "前端任务必须使用契约生成的 Mock 数据编写 UI 逻辑",
+      "category": "Mock 使用",
+      "rationale": "启用 mock_service_layer 时，前端应使用 src/mocks/api.ts 代替真实 API 调用"
+    }
+  ],
+  "categories": {
+    "范围控制": ["bp001", "bp002", "bp003", "bp010", "bp011"],
+    "代码质量": ["bp004"],
+    "类型安全": ["bp005"],
+    "文件结构": ["bp006", "bp008"],
+    "关注点分离": ["bp007"],
+    "命名规范": ["bp009"],
+    "API 规范": ["bp012"],
+    "后端规范": ["bp013", "bp015"],
+    "数据流": ["bp014"],
+    "配置完整": ["bp016", "bp017"],
+    "增量开发": ["bp018"],
+    "Mock 使用": ["bp019"]
+  }
+}

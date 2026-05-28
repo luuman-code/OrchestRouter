@@ -1,0 +1,136 @@
+{
+  "$schema": "./conflict-groups.schema.json",
+  "description": "标准 conflict_sensitive_groups 配置 - 7个标准分组",
+  "groups": [
+    {
+      "name": "类型定义组",
+      "description": "共享类型定义（最高优先级，仅合并类型文件本身）",
+      "strategy": "strong_coupling",
+      "priority": 100,
+      "mergeMode": "selected_only",
+      "files": ["src/types/index.ts"],
+      "rationale": "类型定义是其他所有文件的基础，必须最先处理且独立"
+    },
+    {
+      "name": "构建配置组",
+      "description": "项目构建配置（基础设施，独立生成）",
+      "strategy": "path_affinity",
+      "priority": 90,
+      "maxDepth": 2,
+      "files": [
+        "package.json",
+        "vite.config.js",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "src/index.css"
+      ],
+      "rationale": "配置文件之间依赖简单、冲突风险低，作为基础设施完整输出"
+    },
+    {
+      "name": "后端入口+数据库组",
+      "description": "后端入口+数据库",
+      "strategy": "strong_coupling",
+      "priority": 80,
+      "mergeMode": "full_merge",
+      "files": ["server/database/db.ts", "server/index.ts"],
+      "rationale": "server/index.ts 直接导入 db.ts，必须一起生成"
+    },
+    {
+      "name": "后端路由组",
+      "description": "后端路由组（循环依赖）",
+      "strategy": "strong_coupling",
+      "priority": 70,
+      "mergeMode": "full_merge",
+      "files": [
+        "server/routes/auth.ts",
+        "server/routes/products.ts",
+        "server/routes/cart.ts",
+        "server/routes/orders.ts"
+      ],
+      "rationale": "路由文件之间可能互相导入（circular imports），必须由同一模型生成"
+    },
+    {
+      "name": "前端核心层",
+      "description": "前端核心层：App + main + api 服务",
+      "strategy": "strong_coupling",
+      "priority": 60,
+      "mergeMode": "full_merge",
+      "files": ["src/App.tsx", "src/main.tsx", "src/services/api.ts"],
+      "rationale": "App.tsx 导入 api.ts 和页面组件，需要协调生成"
+    },
+    {
+      "name": "前端页面层",
+      "description": "前端页面层：所有页面组件",
+      "strategy": "strong_coupling",
+      "priority": 50,
+      "mergeMode": "full_merge",
+      "files": [
+        "src/pages/Home.tsx",
+        "src/pages/Login.tsx",
+        "src/pages/Register.tsx",
+        "src/pages/ProductList.tsx",
+        "src/pages/ProductDetail.tsx",
+        "src/pages/Cart.tsx",
+        "src/pages/OrderList.tsx"
+      ],
+      "rationale": "页面组件之间无依赖，可并行生成但需要统一风格"
+    },
+    {
+      "name": "前端组件层",
+      "description": "前端组件层：所有通用组件",
+      "strategy": "strong_coupling",
+      "priority": 40,
+      "mergeMode": "full_merge",
+      "files": [
+        "src/components/Header.tsx",
+        "src/components/ProductCard.tsx",
+        "src/components/CartItem.tsx",
+        "src/components/Button.tsx",
+        "src/components/Input.tsx"
+      ],
+      "rationale": "通用组件被多个页面共享，需要统一接口和风格"
+    }
+  ],
+  "priority_guide": {
+    "100-90": "基础设施和类型定义（最先处理）",
+    "80-70": "后端核心逻辑",
+    "60-40": "前端各层",
+    "note": "数值越大越先执行"
+  },
+  "strategy_guide": {
+    "strong_coupling": {
+      "description": "强制同组，检测传递依赖",
+      "use_when": ["循环依赖文件", "高度耦合文件必须由同一模型生成"]
+    },
+    "path_affinity": {
+      "description": "按路径前缀分组，不跨层",
+      "use_when": ["配置文件集中", "同目录文件"]
+    },
+    "shared": {
+      "description": "保持单一实例，各组引用",
+      "use_when": ["共享类型文件"]
+    }
+  },
+  "common_errors": [
+    {
+      "error": "文件丢失",
+      "cause": "同一文件出现在多个 group 中",
+      "solution": "确保每个文件只出现在一个 group 中"
+    },
+    {
+      "error": "类型不一致",
+      "cause": "types/index.ts 与使用它的文件不在同一组",
+      "solution": "使用 strong_coupling + mergeMode: selected_only 保护类型文件"
+    },
+    {
+      "error": "循环依赖未处理",
+      "cause": "路由文件互相导入但不在同一组",
+      "solution": "将所有路由文件放入同一个 strong_coupling 组"
+    },
+    {
+      "error": "过度合并",
+      "cause": "full_merge 且文件分布在多组",
+      "solution": "改用 mergeMode: selected_only"
+    }
+  ]
+}
