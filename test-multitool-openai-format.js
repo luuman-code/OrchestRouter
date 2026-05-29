@@ -7,7 +7,7 @@
 const https = require('https');
 
 // API 配置
-const API_KEY = 'sk-cp-QI5hMZC8BwNBiY4TmAuKixuv8Qz_r2HIb9iDOPiHyi7FkWCn0WUtzQ363qOonMJWi3NrbHYx6EpAYWu-JcDOxu6JLjd-ZVF02ZaTBWDsVexFqCS5T_dB6zw';
+const API_KEY = '';
 const API_URL = 'api.minimaxi.com';
 const API_PATH = '/v1/chat/completions';
 const MODEL = 'MiniMax-M2.5';
